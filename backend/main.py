@@ -5,7 +5,7 @@ Uses only: numpy, Python stdlib.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import (
-    linear, quadratic, geometry, chemistry,
+    linear, quadratic, geometry, chemistry, physics,
     calculus, trigonometry, statistics, progressions, vectors,
 )
 
@@ -33,8 +33,9 @@ app.include_router(statistics.router,   prefix="/api/stats",        tags=["Stati
 app.include_router(progressions.router, prefix="/api/progressions", tags=["Progressions"])
 app.include_router(vectors.router,      prefix="/api/vectors",      tags=["Vectors"])
 
-# ── Chemistry Extension ──────────────────────────────────────────
-app.include_router(chemistry.router)    # already prefixed at /chemistry
+# ── Chemistry & Physics Extensions ───────────────────────────────
+app.include_router(chemistry.router, prefix="/api/chemistry", tags=["Chemistry"])
+app.include_router(physics.router,   prefix="/api/physics",   tags=["Physics"])
 
 
 @app.get("/", tags=["Health"])

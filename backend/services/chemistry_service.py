@@ -263,3 +263,161 @@ class ChemistryService:
             "box_size": box_size,
             "particles": particles
         }
+
+    @staticmethod
+    def separation_process(method: str) -> Dict[str, Any]:
+        """Provides steps and visuals for separation techniques."""
+        if method.lower() == "filtration":
+            return {"success": True, "method": method, "steps": [
+                {"id": 1, "desc": "Mix salt and sand in water."},
+                {"id": 2, "desc": "Pour mixture through filter paper into beaker."},
+                {"id": 3, "desc": "Wash residue with distilled water."},
+            ]}
+        elif method.lower() == "evaporation":
+            return {"success": True, "method": method, "steps": [
+                {"id": 1, "desc": "Pour salt water solution into evaporating dish."},
+                {"id": 2, "desc": "Heat solution until water evaporates."},
+                {"id": 3, "desc": "Crystals of salt remain in the dish."},
+            ]}
+        return {"success": False, "error": f"Unknown separation method: {method}"}
+
+    @staticmethod
+    def change_detector(scenario: str) -> Dict[str, Any]:
+        """Classifies scenario as physical or chemical change."""
+        scenario_lower = scenario.lower()
+        
+        # Keywords indicating chemical identity change
+        chemical_keywords = [
+            "burn", "rust", "react", "bake", "cook", "acid", "gas", "precipitate", 
+            "oxidize", "tarnish", "ferment", "rot", "digestion", "photosynthesis",
+            "explosion", "combustion", "bubbles", "color change", "odor"
+        ]
+        
+        # Keywords traditionally associated with physical changes
+        physical_keywords = [
+            "melt", "freeze", "boil", "condense", "sublimation", "evaporate",
+            "shred", "chop", "mix", "break", "cut", "crush", "dissolve", "bend"
+        ]
+        
+        is_chemical = any(k in scenario_lower for k in chemical_keywords)
+        is_physical = any(k in scenario_lower for k in physical_keywords)
+        
+        # Heuristic override: if "melting" is mentioned, it's usually physical even if other words present
+        if "melt" in scenario_lower or "freeze" in scenario_lower or "boil" in scenario_lower:
+            is_chemical = False
+        
+        change_type = "Chemical" if is_chemical else "Physical"
+        explanation = (
+            "New substances are formed as chemical bonds are broken and created." 
+            if is_chemical else 
+            "The substance changes state or form, but its chemical identity remains identical."
+        )
+        
+        return {
+            "success": True,
+            "scenario": scenario,
+            "type": change_type,
+            "explanation": explanation
+        }
+
+    @staticmethod
+    def atom_builder(p: int, n: int, e: int) -> Dict[str, Any]:
+        """Calculates element, charge, and mass."""
+        if p == 0: return {"success": False, "error": "Protons cannot be 0"}
+        mass = p + n
+        charge = p - e
+        
+        # Determine symbol
+        symbol = "Unknown"
+        name = "Unknown Element"
+        for s, data in PERIODIC_TABLE.items():
+            if data["atomic_number"] == p:
+                symbol = s
+                name = data["name"]
+                break
+                
+        return {
+            "success": True,
+            "element": name,
+            "symbol": symbol,
+            "mass": mass,
+            "charge": charge,
+            "is_stable": p == n  # highly simplified logic
+        }
+
+    @staticmethod
+    def chemical_bonding(el1: str, el2: str) -> Dict[str, Any]:
+        """Determines bond type based on typical element properties."""
+        # Highly simplified heuristic for demo
+        metals = ["Na", "Li", "K", "Mg", "Ca"]
+        m1 = el1.capitalize() in metals
+        m2 = el2.capitalize() in metals
+        
+        if m1 and m2: bond = "Metallic"
+        elif m1 != m2: bond = "Ionic"
+        else: bond = "Covalent"
+        
+        return {"success": True, "elements": [el1, el2], "bond_type": bond}
+
+    @staticmethod
+    def mole_calculator(value: float, mode: str, molar_mass: float) -> Dict[str, Any]:
+        """Converts between mass, moles, and particles."""
+        if value < 0 or molar_mass <= 0: return {"success": False, "error": "Invalid values"}
+        avogadro = 6.022e23
+        
+        if mode == "mass_to_moles":
+            return {"success": True, "result": value / molar_mass, "unit": "mol"}
+        elif mode == "moles_to_mass":
+            return {"success": True, "result": value * molar_mass, "unit": "g"}
+        elif mode == "moles_to_particles":
+            return {"success": True, "result": value * avogadro, "unit": "particles"}
+        return {"success": False, "error": "Unknown mode"}
+
+    @staticmethod
+    def reaction_kinetics(concentration: float, rate_constant: float, order: int) -> Dict[str, Any]:
+        """Generates time series graph of concentration decays."""
+        t = np.linspace(0, 50, 20)
+        
+        if order == 0:
+            c = concentration - rate_constant * t
+            c = np.maximum(c, 0)
+        elif order == 1:
+            c = concentration * np.exp(-rate_constant * t)
+        else:
+            c = 1 / ((1/concentration) + rate_constant * t)
+            
+        return {
+            "success": True,
+            "order": order,
+            "time": t.round(2).tolist(),
+            "concentration": c.round(3).tolist()
+        }
+
+    @staticmethod
+    def equilibrium_simulator(temp_change: float) -> Dict[str, Any]:
+        """Le Chatelier simulator (simplified exothermic baseline)."""
+        shift = "Right (Products)" if temp_change < 0 else "Left (Reactants)"
+        return {
+            "success": True,
+            "stimulus": f"Temp change {'+' if temp_change > 0 else ''}{temp_change}°C",
+            "shift": shift
+        }
+
+    @staticmethod
+    def thermodynamics_viz(rxn_type: str) -> Dict[str, Any]:
+        """Generates energy profile curves."""
+        x = np.linspace(0, 10, 50)
+        # generic gaussian activation curve
+        activation = 50 * np.exp(-(x - 4)**2 / 2)
+        
+        if rxn_type.lower() == "exothermic":
+            y = 80 - 10 * x + activation
+        else:
+            y = 20 + 10 * x + activation
+            
+        return {
+            "success": True,
+            "type": rxn_type,
+            "progress": x.round(2).tolist(),
+            "energy": y.round(2).tolist()
+        }
