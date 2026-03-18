@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 import 'dart:math' as math;
 
 class FrictionScreen extends StatefulWidget {
@@ -15,22 +14,36 @@ class FrictionScreen extends StatefulWidget {
 
 class _FrictionScreenState extends State<FrictionScreen> {
   double _angle = 0.0;
+  double _mass = 50.0;
+  double _mu = 0.5;
   Map<String, dynamic>? _data;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    setState(() => _isLoading = true);
-    final data = await PhysicsApiService.getFrictionData(_mass, _mu, _angle);
+  void _calculate() {
+    const double g = 9.81;
+    final double rad = _angle * math.pi / 180;
+    
+    final double gravityParallel = _mass * g * math.sin(rad);
+    final double normalForce = _mass * g * math.cos(rad);
+    final double staticMax = _mu * normalForce;
+    
+    bool sliding = gravityParallel > staticMax;
+    double frictionForce = sliding ? (_mu * 0.8 * normalForce) : gravityParallel;
+
     if (mounted) {
       setState(() {
-        _data = data;
-        _isLoading = false;
+        _data = {
+          'success': true,
+          'normal_force': normalForce,
+          'friction_force': frictionForce,
+          'is_sliding': sliding,
+          'will_slide': sliding,
+        };
       });
     }
   }
@@ -54,8 +67,8 @@ class _FrictionScreenState extends State<FrictionScreen> {
           children: [
             Padding(padding: const EdgeInsets.all(16), child: Text('Surface Friction Mechanics', style: GoogleFonts.jetBrainsMono(fontSize: 20, color: Colors.blueAccent))),
             Expanded(
-              child: _isLoading || _data == null || _data?['success'] == false
-                  ? Center(child: _isLoading ? const CircularProgressIndicator() : Text(_data?['error'] ?? 'No data available', style: const TextStyle(color: Colors.redAccent)))
+              child: _data == null || _data?['success'] == false
+                  ? Center(child: Text(_data?['error'] ?? 'Loading...', style: const TextStyle(color: Colors.redAccent)))
                   : CustomPaint(
                       painter: _FrictionPainter(
                         mass: _mass,
@@ -86,9 +99,9 @@ class _FrictionScreenState extends State<FrictionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ParameterSlider(label: 'Mass (kg)', value: _mass, min: 1, max: 100, onChanged: (v){ setState(()=>_mass=v); _fetch(); }),
-              ParameterSlider(label: 'Friction Coefficient (μ)', value: _mu, min: 0.1, max: 1.0, onChanged: (v){ setState(()=>_mu=v); _fetch(); }),
-              ParameterSlider(label: 'Incline Angle (°)', value: _angle, min: 0, max: 90, onChanged: (v){ setState(()=>_angle=v); _fetch(); }),
+              ParameterSlider(label: 'Mass (kg)', value: _mass, min: 1, max: 100, onChanged: (v){ setState(()=>_mass=v); _calculate(); }),
+              ParameterSlider(label: 'Friction Coefficient (μ)', value: _mu, min: 0.1, max: 1.0, onChanged: (v){ setState(()=>_mu=v); _calculate(); }),
+              ParameterSlider(label: 'Incline Angle (°)', value: _angle, min: 0, max: 90, onChanged: (v){ setState(()=>_angle=v); _calculate(); }),
               const Spacer(),
               if (_data != null && _data?['success'] == true) ...[
                 Text('Status:', style: GoogleFonts.inter(color: Colors.white54)),
@@ -105,15 +118,20 @@ class _FrictionScreenState extends State<FrictionScreen> {
                 _stat('Status', _data?['is_sliding'] == true ? "SLIDING" : "STATIC", c: _data?['is_sliding'] == true ? Colors.redAccent : Colors.greenAccent),
               ] else if (_data != null)
                 Text(_data?['error'] ?? 'Simulation Error', style: const TextStyle(color: Colors.redAccent))
-              ]
-            ]
-          )
-        )
-      )
+            ],
+          ),
+        ),
+      ),
     );
   }
   
-  Widget _stat(String l, String v) => Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(l, style: GoogleFonts.inter(color: Colors.white)), Text(v, style: GoogleFonts.jetBrainsMono(color: Colors.orangeAccent))]);
+  Widget _stat(String l, String v, {Color? c}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(l, style: GoogleFonts.inter(color: Colors.white)), 
+      Text(v, style: GoogleFonts.jetBrainsMono(color: c ?? Colors.orangeAccent))
+    ])
+  );
 }
 
 class _FrictionPainter extends CustomPainter {

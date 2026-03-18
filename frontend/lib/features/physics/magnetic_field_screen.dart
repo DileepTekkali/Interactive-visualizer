@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 import 'dart:math' as math;
 
 class MagneticFieldScreen extends StatefulWidget {
@@ -22,7 +21,7 @@ class _MagneticFieldScreenState extends State<MagneticFieldScreen> with SingleTi
   void initState() {
     super.initState();
     _animController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
-    _fetch();
+    _calculate();
   }
 
   @override
@@ -31,9 +30,31 @@ class _MagneticFieldScreenState extends State<MagneticFieldScreen> with SingleTi
     super.dispose();
   }
 
-  Future<void> _fetch() async {
-    final data = await PhysicsApiService.magneticField(_strength);
-    if (mounted) setState(() => _data = data);
+  void _calculate() {
+    // Dipole Field Approximation local data
+    // Grid: -5 to 5
+    List<List<double>> grid = [];
+    double maxB = 0;
+    final s = _strength;
+
+    for (int y = -3; y <= 3; y++) {
+      for (int x = -3; x <= 3; x++) {
+        double r = math.sqrt(x * x + y * y) + 1.0;
+        double B = s / (r * r);
+        if (B > maxB) maxB = B;
+        grid.add([x.toDouble(), y.toDouble(), B]);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'grid': grid,
+          'max_b_field': maxB,
+        };
+      });
+    }
   }
 
   @override
@@ -82,12 +103,12 @@ class _MagneticFieldScreenState extends State<MagneticFieldScreen> with SingleTi
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               ParameterSlider(label: 'Magnet Strength', value: _strength, min: 1, max: 20, onChanged: (v){ setState(()=>_strength=v); _fetch(); }),
+               ParameterSlider(label: 'Magnet Strength', value: _strength, min: 1, max: 20, onChanged: (v){ setState(()=>_strength=v); _calculate(); }),
                const Spacer(),
                if (_data != null) ...[
                  if (_data?['success'] == true) ...[
-                   _stat('Grid Points', "\${(_data?['grid'] as List?)?.length ?? 0}"),
-                   _stat('Max B-Field', "\${(_data?['max_b_field'] as num?)?.toDouble() ?? 0.0} T"),
+                   _stat('Grid Points', "${(_data?['grid'] as List?)?.length ?? 0}"),
+                   _stat('Max B-Field', "${(_data?['max_b_field'] as num?)?.toDouble() ?? 0.0} T"),
                    const SizedBox(height: 16),
                    Text('Magnetic field loops from North (Red) to South (Blue). Field is strongest at the poles.', style: GoogleFonts.inter(color: Colors.white54, fontSize: 13))
                  ] else

@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 
 class EnergySimulatorScreen extends StatefulWidget {
   const EnergySimulatorScreen({super.key});
@@ -21,12 +20,25 @@ class _EnergySimulatorScreenState extends State<EnergySimulatorScreen> {
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    final data = await PhysicsApiService.energySimulator(_mass, _height, _velocity);
-    if (mounted) setState(() => _data = data);
+  void _calculate() {
+    const double g = 9.81;
+    final pe = _mass * g * _height;
+    final ke = 0.5 * _mass * _velocity * _velocity;
+    final te = pe + ke;
+
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'potential_energy': pe,
+          'kinetic_energy': ke,
+          'total_energy': te,
+        };
+      });
+    }
   }
 
   @override
@@ -83,7 +95,7 @@ class _EnergySimulatorScreenState extends State<EnergySimulatorScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text('\${val.toInt()} J', style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 16)),
+        Text('${val.toInt()} J', style: GoogleFonts.jetBrainsMono(color: Colors.white, fontSize: 16)),
         const SizedBox(height: 8),
         Container(
           width: 60,
@@ -108,9 +120,9 @@ class _EnergySimulatorScreenState extends State<EnergySimulatorScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               ParameterSlider(label: 'Mass (kg)', value: _mass, min: 1, max: 100, onChanged: (v){ setState(()=>_mass=v); _fetch(); }),
-               ParameterSlider(label: 'Height (m)', value: _height, min: 0, max: 200, onChanged: (v){ setState(()=>_height=v); _fetch(); }),
-               ParameterSlider(label: 'Velocity (m/s)', value: _velocity, min: 0, max: 100, onChanged: (v){ setState(()=>_velocity=v); _fetch(); }),
+               ParameterSlider(label: 'Mass (kg)', value: _mass, min: 1, max: 100, onChanged: (v){ setState(()=>_mass=v); _calculate(); }),
+               ParameterSlider(label: 'Height (m)', value: _height, min: 0, max: 200, onChanged: (v){ setState(()=>_height=v); _calculate(); }),
+               ParameterSlider(label: 'Velocity (m/s)', value: _velocity, min: 0, max: 100, onChanged: (v){ setState(()=>_velocity=v); _calculate(); }),
                const Spacer(),
                Text('Equations', style: GoogleFonts.inter(color: Colors.white54)),
                const SizedBox(height: 8),

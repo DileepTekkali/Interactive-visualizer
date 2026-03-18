@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 
 class CircuitSimulatorScreen extends StatefulWidget {
   const CircuitSimulatorScreen({super.key});
@@ -17,21 +16,35 @@ class _CircuitSimulatorScreenState extends State<CircuitSimulatorScreen> {
   List<double> _resistors = [10.0, 20.0];
   bool _isSeries = true;
   Map<String, dynamic>? _data;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    setState(() => _isLoading = true);
-    final data = await PhysicsApiService.circuitSimulator(_resistors, _voltage, _isSeries);
-    setState(() {
-      _data = data;
-      _isLoading = false;
-    });
+  void _calculate() {
+    double req = 0;
+    if (_isSeries) {
+      req = _resistors.fold(0, (sum, r) => sum + r);
+    } else {
+      double invSum = _resistors.fold(0, (sum, r) => sum + (1 / r));
+      req = (invSum == 0) ? 0 : 1 / invSum;
+    }
+    
+    double current = _voltage / (req == 0 ? 1 : req);
+    double power = _voltage * current;
+
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'equivalent_resistance': req,
+          'total_current': current,
+          'total_power': power,
+        };
+      });
+    }
   }
 
   @override
@@ -51,12 +64,12 @@ class _CircuitSimulatorScreenState extends State<CircuitSimulatorScreen> {
         decoration: AppTheme.glassCard,
         child: Column(
           children: [
-            Padding(padding: const EdgeInsets.all(16), child: Text('Circuit Builder (\${_isSeries ? "Series" : "Parallel"})', style: GoogleFonts.inter(fontSize: 18, color: Colors.blueAccent))),
+            Padding(padding: const EdgeInsets.all(16), child: Text('Circuit Builder (${_isSeries ? "Series" : "Parallel"})', style: GoogleFonts.inter(fontSize: 18, color: Colors.blueAccent))),
             Expanded(
-              child: _isLoading || _data == null || _data?['success'] == false
-                  ? Center(child: _isLoading ? const CircularProgressIndicator() : Text(_data?['error'] ?? 'Data unavailable', style: const TextStyle(color: Colors.redAccent)))
+              child: _data == null || _data?['success'] == false
+                  ? Center(child: Text(_data?['error'] ?? 'Loading...', style: const TextStyle(color: Colors.redAccent)))
                   : CustomPaint(
-                      painter: _CircuitPainter(isSeries: _isSeries, rCount: _resistors.length, totalP: (_data?['total_power'] as num?)?.toDouble()),
+                      painter: _CircuitPainter(isSeries: _isSeries, rCount: _resistors.length, totalP: (_data?['total_power'] as num?)?.toDouble() ?? 0.0),
                       size: Size.infinite,
                     ),
             ),
@@ -84,24 +97,24 @@ class _CircuitSimulatorScreenState extends State<CircuitSimulatorScreen> {
                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                    children: [
                      Text('Circuit Type', style: GoogleFonts.inter(color: Colors.white)),
-                     Switch(value: _isSeries, onChanged: (v){ setState(()=>_isSeries=v); _fetch(); }, activeColor: Colors.orangeAccent)
+                      Switch(value: _isSeries, onChanged: (v){ setState(()=>_isSeries=v); _calculate(); }, activeColor: Colors.orangeAccent)
                    ]
                  ),
                  Text(_isSeries ? "Series Mode" : "Parallel Mode", style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
                  const SizedBox(height: 16),
-                 ParameterSlider(label: 'Voltage (V)', value: _voltage, min: 1, max: 220, onChanged: (v){ setState(()=>_voltage=v); _fetch(); }),
+                 ParameterSlider(label: 'Voltage (V)', value: _voltage, min: 1, max: 220, onChanged: (v){ setState(()=>_voltage=v); _calculate(); }),
                  const SizedBox(height: 16),
                  Text('Resistors (Ω)', style: GoogleFonts.inter(color: Colors.white)),
                  ...List.generate(_resistors.length, (i) => Row(
                    children: [
-                     Expanded(child: ParameterSlider(label: 'R\${i+1}', value: _resistors[i], min: 1, max: 100, onChanged: (v){ setState(()=>_resistors[i]=v); _fetch(); })),
+                     Expanded(child: ParameterSlider(label: 'R${i+1}', value: _resistors[i], min: 1, max: 100, onChanged: (v){ setState(()=>_resistors[i]=v); _calculate(); })),
                      IconButton(icon: const Icon(Icons.remove_circle, color: Colors.redAccent), onPressed: () {
-                       if (_resistors.length > 1) { setState(()=>_resistors.removeAt(i)); _fetch(); }
+                       if (_resistors.length > 1) { setState(()=>_resistors.removeAt(i)); _calculate(); }
                      })
                    ]
                  )),
                  if (_resistors.length < 5)
-                   TextButton.icon(onPressed: (){ setState(()=>_resistors.add(10.0)); _fetch(); }, icon: const Icon(Icons.add), label: const Text('Add Resistor')),
+                   TextButton.icon(onPressed: (){ setState(()=>_resistors.add(10.0)); _calculate(); }, icon: const Icon(Icons.add), label: const Text('Add Resistor')),
                  const SizedBox(height: 24),
                   if (_data != null && _data?['success'] == true) ...[
                     _stat('Eq. Resistance', "${(_data?['equivalent_resistance'] as num?)?.toDouble() ?? 0.0} Ω"),
@@ -166,8 +179,9 @@ class _CircuitPainter extends CustomPainter {
     }
 
     // "Light / power" effect
-    if (totalP != null && totalP > 0) {
-      canvas.drawCircle(Offset(center.dx + w/2 + 30, center.dy), 10 + (totalP / 10).clamp(0, 30).toDouble(), Paint()..color=Colors.yellowAccent.withOpacity(0.5)..maskFilter=const MaskFilter.blur(BlurStyle.normal, 10));
+    final tp = totalP;
+    if (tp != null && tp > 0) {
+      canvas.drawCircle(Offset(center.dx + w/2 + 30, center.dy), 10 + (tp / 10).clamp(0, 30).toDouble(), Paint()..color=Colors.yellowAccent.withOpacity(0.5)..maskFilter=const MaskFilter.blur(BlurStyle.normal, 10));
     }
   }
 

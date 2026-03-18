@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 import 'dart:math' as math;
 
 class OpticsScreen extends StatefulWidget {
@@ -22,12 +21,36 @@ class _OpticsScreenState extends State<OpticsScreen> {
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    final data = await PhysicsApiService.lightRaySimulator(_angle, _n1, _n2);
-    if (mounted) setState(() => _data = data);
+  void _calculate() {
+    final double theta1Deg = _angle;
+    final double n1 = _n1;
+    final double n2 = _n2;
+    
+    final double theta1Rad = theta1Deg * math.pi / 180;
+    final double sinTheta2 = (n1 / n2) * math.sin(theta1Rad);
+    
+    bool tir = false;
+    double theta2Deg = 0;
+    
+    if (sinTheta2.abs() > 1.0) {
+      tir = true;
+    } else {
+      theta2Deg = math.asin(sinTheta2) * 180 / math.pi;
+    }
+
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'incident_angle_deg': theta1Deg,
+          'refracted_angle_deg': theta2Deg,
+          'total_internal_reflection': tir,
+        };
+      });
+    }
   }
 
   @override
@@ -73,9 +96,9 @@ class _OpticsScreenState extends State<OpticsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               ParameterSlider(label: 'Incident Angle (°)', value: _angle, min: 0, max: 90, onChanged: (v){ setState(()=>_angle=v); _fetch(); }),
-               ParameterSlider(label: 'Medium 1 Index (n₁)', value: _n1, min: 1.0, max: 3.0, onChanged: (v){ setState(()=>_n1=v); _fetch(); }),
-               ParameterSlider(label: 'Medium 2 Index (n₂)', value: _n2, min: 1.0, max: 3.0, onChanged: (v){ setState(()=>_n2=v); _fetch(); }),
+               ParameterSlider(label: 'Incident Angle (°)', value: _angle, min: 0, max: 90, onChanged: (v){ setState(()=>_angle=v); _calculate(); }),
+               ParameterSlider(label: 'Medium 1 Index (n₁)', value: _n1, min: 1.0, max: 3.0, onChanged: (v){ setState(()=>_n1=v); _calculate(); }),
+               ParameterSlider(label: 'Medium 2 Index (n₂)', value: _n2, min: 1.0, max: 3.0, onChanged: (v){ setState(()=>_n2=v); _calculate(); }),
                const Spacer(),
                if (_data != null) ...[
                 if (_data?['success'] == true) ...[

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 
 class WaveSimulatorScreen extends StatefulWidget {
   const WaveSimulatorScreen({super.key});
@@ -25,18 +25,31 @@ class _WaveSimulatorScreenState extends State<WaveSimulatorScreen> with SingleTi
     super.initState();
     _animController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
     _animController.addListener(() {
-      // dynamically shift phase for animation
       if (mounted) {
         setState(() {
-          _phase = (_animController.value * 2 * 3.14159);
+          _phase = (_animController.value * 2 * math.pi);
+          _calculateWave();
         });
-        // Throttle fetch to only happen when animation is at certain points or use faster method
-        // For now, ensure it only fetches if not already loading or at lower frequency
-        if (_animController.value % 0.1 < 0.02) {
-          _fetch();
-        }
       }
     });
+  }
+
+  void _calculateWave() {
+    const int points = 100;
+    List<double> xData = [];
+    List<double> yData = [];
+    
+    for (int i = 0; i < points; i++) {
+        double x = i * 0.2;
+        xData.add(x);
+        yData.add(_amplitude * math.sin(x - _phase * _frequency));
+    }
+
+    _data = {
+      'success': true,
+      'x': xData,
+      'y': yData,
+    };
   }
 
   @override
@@ -45,10 +58,7 @@ class _WaveSimulatorScreenState extends State<WaveSimulatorScreen> with SingleTi
     super.dispose();
   }
 
-  Future<void> _fetch() async {
-    final data = await PhysicsApiService.waveSimulator(_amplitude, _frequency, _phase);
-    if (mounted) setState(() => _data = data);
-  }
+  // Removed API fetch. All calculations are local.
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +98,7 @@ class _WaveSimulatorScreenState extends State<WaveSimulatorScreen> with SingleTi
     if (x.isEmpty || y.isEmpty) return const Center(child: Text('Insufficient wave data', style: TextStyle(color: Colors.white54)));
     
     for (int i = 0; i < math.min(x.length, y.length); i++) {
-        spots.add(FlSpot((x[i] as num).toDouble(), (y[i] as num).toDouble()));
+        spots.add(FlSpot((x[i] as num?)?.toDouble() ?? 0.0, (y[i] as num?)?.toDouble() ?? 0.0));
     }
     return LineChart(
       LineChartData(

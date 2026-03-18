@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
 
@@ -18,21 +17,38 @@ class _HeatTransferScreenState extends State<HeatTransferScreen> {
   String _mode = 'conduction';
   double _deltaT = 50.0;
   Map<String, dynamic>? _data;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    setState(() => _isLoading = true);
-    final data = await PhysicsApiService.heatTransfer(_mode, _deltaT);
-    setState(() {
-      _data = data;
-      _isLoading = false;
-    });
+  void _calculate() {
+    final double dt = _deltaT;
+    final String mode = _mode;
+    
+    List<double> timeSteps = [];
+    List<double> heatCurve = [];
+    
+    double k = mode == 'conduction' ? 0.5 : mode == 'convection' ? 0.8 : 1.2;
+    
+    for (int i = 0; i <= 20; i++) {
+        double t = i.toDouble();
+        double q = k * dt * (1 - math.exp(-t / 10.0));
+        timeSteps.add(t);
+        heatCurve.add(q);
+    }
+
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'heat_curve': heatCurve,
+          'time_steps': timeSteps,
+        };
+      });
+    }
   }
 
   @override
@@ -55,10 +71,10 @@ class _HeatTransferScreenState extends State<HeatTransferScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Text('\${_mode.toUpperCase()} Heat Transfer', style: GoogleFonts.inter(fontSize: 18, color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+            Text('${_mode.toUpperCase()} Heat Transfer', style: GoogleFonts.inter(fontSize: 18, color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             Expanded(
-              child: _isLoading || _data == null || _data?['success'] == false
+              child: _data == null || _data?['success'] == false
                   ? const Center(child: CircularProgressIndicator())
                   : _buildFlChart(),
             ),
@@ -122,10 +138,10 @@ class _HeatTransferScreenState extends State<HeatTransferScreen> {
                 dropdownColor: AppTheme.surfaceLight,
                 style: const TextStyle(color: Colors.white),
                 items: ['conduction', 'convection', 'radiation'].map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase()))).toList(),
-                onChanged: (v) { setState(() => _mode = v!); _fetch(); },
+                onChanged: (v) { setState(() => _mode = v!); _calculate(); },
               ),
               const SizedBox(height: 24),
-              ParameterSlider(label: 'Temp Difference (ΔT °C)', value: _deltaT, min: 10, max: 200, onChanged: (v) { setState(() => _deltaT = v); _fetch(); }),
+              ParameterSlider(label: 'Temp Difference (ΔT °C)', value: _deltaT, min: 10, max: 200, onChanged: (v) { setState(() => _deltaT = v); _calculate(); }),
               const Spacer(),
               if (_data != null && _data?['success'] == true) ...[
                 Text('Mechanism:', style: GoogleFonts.inter(color: Colors.white54)),

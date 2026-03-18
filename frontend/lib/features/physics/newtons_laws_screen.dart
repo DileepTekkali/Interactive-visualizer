@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 
 class NewtonsLawsScreen extends StatefulWidget {
   const NewtonsLawsScreen({super.key});
@@ -22,18 +21,21 @@ class _NewtonsLawsScreenState extends State<NewtonsLawsScreen> with SingleTicker
   void initState() {
     super.initState();
     _animController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
-    _fetch();
+    _calculate();
   }
 
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetch() async {
-    final data = await PhysicsApiService.newtonsLaws(_force, _mass);
-    if (mounted) setState(() => _data = data);
+  void _calculate() {
+    final accel = _mass == 0 ? 0.0 : _force / _mass;
+    
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'acceleration': accel,
+          'law_statement': "An object with mass ${_mass}kg under ${_force}N force accelerates at ${accel.toStringAsFixed(2)}m/s².",
+        };
+      });
+    }
   }
 
   @override
@@ -88,8 +90,8 @@ class _NewtonsLawsScreenState extends State<NewtonsLawsScreen> with SingleTicker
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ParameterSlider(label: 'Applied Force (N)', value: _force, min: -100, max: 100, onChanged: (v){ setState(()=>_force=v); _fetch(); }),
-              ParameterSlider(label: 'Mass (kg)', value: _mass, min: 1, max: 50, onChanged: (v){ setState(()=>_mass=v); _fetch(); }),
+              ParameterSlider(label: 'Applied Force (N)', value: _force, min: -100, max: 100, onChanged: (v){ setState(()=>_force=v); _calculate(); }),
+              ParameterSlider(label: 'Mass (kg)', value: _mass, min: 1, max: 50, onChanged: (v){ setState(()=>_mass=v); _calculate(); }),
               const Spacer(),
               if (_data != null) ...[
                 if (_data?['success'] == true) ...[

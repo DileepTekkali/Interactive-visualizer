@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 
 class MotionGraphScreen extends StatefulWidget {
   const MotionGraphScreen({super.key});
@@ -18,21 +18,48 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
   double _initialV = 0.0;
   double _time = 10.0;
   Map<String, dynamic>? _data;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    setState(() => _isLoading = true);
-    final data = await PhysicsApiService.motionGraph(_accel, _initialV, _time);
-    setState(() {
-      _data = data;
-      _isLoading = false;
-    });
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _calculate() {
+    final double a = _accel;
+    final double u = _initialV;
+    final double tMax = _time;
+    
+    List<double> timeSteps = [];
+    List<double> positionSteps = [];
+    List<double> velocitySteps = [];
+    
+    // Generate 50 points
+    for (int i = 0; i <= 50; i++) {
+        double t = (i / 50.0) * tMax;
+        double s = (u * t) + (0.5 * a * t * t);
+        double v = u + (a * t);
+        
+        timeSteps.add(t);
+        positionSteps.add(s);
+        velocitySteps.add(v);
+    }
+
+    if (mounted) {
+      setState(() {
+        _data = {
+          'success': true,
+          'time': timeSteps,
+          'position': positionSteps,
+          'velocity': velocitySteps,
+        };
+      });
+    }
   }
 
   @override
@@ -54,8 +81,8 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
           children: [
             Padding(padding: const EdgeInsets.all(16), child: Text('Position & Velocity over Time', style: GoogleFonts.inter(fontSize: 18, color: Colors.blueAccent))),
             Expanded(
-              child: _isLoading || _data == null || _data?['success'] == false
-                  ? Center(child: _isLoading ? const CircularProgressIndicator() : Text(_data?['error'] ?? 'Data unavailable', style: const TextStyle(color: Colors.redAccent)))
+              child: _data == null || _data?['success'] == false
+                  ? Center(child: Text(_data?['error'] ?? 'Loading...', style: const TextStyle(color: Colors.redAccent)))
                   : Padding(padding: const EdgeInsets.all(32), child: _buildChart()),
             ),
           ],
@@ -73,6 +100,8 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
     List<FlSpot> velSpots = [];
     
     if (pg.isEmpty || vg.isEmpty || t.isEmpty) return const Center(child: Text('Insufficient data points', style: TextStyle(color: Colors.white54)));
+    
+    for (int i = 0; i < math.min(t.length, math.min(pg.length, vg.length)); i++) {
         posSpots.add(FlSpot((t[i] as num).toDouble(), (pg[i] as num).toDouble()));
         velSpots.add(FlSpot((t[i] as num).toDouble(), (vg[i] as num).toDouble()));
     }
@@ -118,9 +147,9 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               ParameterSlider(label: 'Acceleration (m/s²)', value: _accel, min: -10, max: 10, onChanged: (v){ setState(()=>_accel=v); _fetch(); }),
-               ParameterSlider(label: 'Init Velocity (m/s)', value: _initialV, min: -20, max: 20, onChanged: (v){ setState(()=>_initialV=v); _fetch(); }),
-               ParameterSlider(label: 'Total Time (s)', value: _time, min: 1, max: 20, onChanged: (v){ setState(()=>_time=v); _fetch(); }),
+               ParameterSlider(label: 'Acceleration (m/s²)', value: _accel, min: -10, max: 10, onChanged: (v){ setState(()=>_accel=v); _calculate(); }),
+               ParameterSlider(label: 'Init Velocity (m/s)', value: _initialV, min: -20, max: 20, onChanged: (v){ setState(()=>_initialV=v); _calculate(); }),
+               ParameterSlider(label: 'Total Time (s)', value: _time, min: 1, max: 20, onChanged: (v){ setState(()=>_time=v); _calculate(); }),
                const Spacer(),
                Row(children: [Container(width: 12, height:12, color: Colors.redAccent), const SizedBox(width: 8), Text('Position (m)', style: TextStyle(color: Colors.white))]),
                const SizedBox(height: 8),

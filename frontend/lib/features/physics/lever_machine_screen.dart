@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/physics_api_service.dart';
 import 'dart:math' as math;
 
 class LeverScreen extends StatefulWidget {
@@ -18,21 +17,27 @@ class _LeverScreenState extends State<LeverScreen> {
   double _effortArm = 4.0;
   double _loadMass = 50.0;
   Map<String, dynamic>? _data;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetch();
+    _calculate();
   }
 
-  Future<void> _fetch() async {
-    setState(() => _isLoading = true);
-    final data = await PhysicsApiService.leverMachine(_effortArm, _loadArm, _loadMass);
+  void _calculate() {
+    const double g = 9.81;
+    final double loadForce = _loadMass * g;
+    final double ma = _effortArm / _loadArm;
+    final double effortRequired = loadForce / ma;
+
     if (mounted) {
       setState(() {
-        _data = data;
-        _isLoading = false;
+        _data = {
+          'success': true,
+          'mechanical_advantage': ma,
+          'load_force': loadForce,
+          'effort_required': effortRequired,
+        };
       });
     }
   }
@@ -57,13 +62,18 @@ class _LeverScreenState extends State<LeverScreen> {
             Padding(
               padding: const EdgeInsets.all(16), 
               child: Text(
-                "Mechanical Advantage: \${_data?['mechanical_advantage']?.toStringAsFixed(2) ?? '...'}", 
+                "Mechanical Advantage: ${_data?['mechanical_advantage']?.toStringAsFixed(2) ?? '0.00'}", 
                 style: GoogleFonts.jetBrainsMono(fontSize: 20, color: Colors.blueAccent)
               )
             ),
             Expanded(
               child: CustomPaint(
-                painter: _LeverPainter(effortArm: _effortArm, loadArm: _loadArm, loadMass: _loadMass, effortRequired: (_data?['effort_required'] as num?)?.toDouble()),
+                painter: _LeverPainter(
+                  effortArm: _effortArm, 
+                  loadArm: _loadArm, 
+                  loadMass: _loadMass, 
+                  effortRequired: (_data?['effort_required'] as num?)?.toDouble() ?? 0.0
+                ),
                 size: Size.infinite,
               ),
             ),
@@ -86,14 +96,12 @@ class _LeverScreenState extends State<LeverScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ParameterSlider(label: 'Effort Arm (m)', value: _effortArm, min: 1, max: 10, onChanged: (v){ setState(()=>_effortArm=v); _fetch(); }),
-              ParameterSlider(label: 'Load Arm (m)', value: _loadArm, min: 1, max: 10, onChanged: (v){ setState(()=>_loadArm=v); _fetch(); }),
-              ParameterSlider(label: 'Load Mass (kg)', value: _loadMass, min: 10, max: 200, onChanged: (v){ setState(()=>_loadMass=v); _fetch(); }),
+              ParameterSlider(label: 'Effort Arm (m)', value: _effortArm, min: 1, max: 10, onChanged: (v){ setState(()=>_effortArm=v); _calculate(); }),
+              ParameterSlider(label: 'Load Arm (m)', value: _loadArm, min: 1, max: 10, onChanged: (v){ setState(()=>_loadArm=v); _calculate(); }),
+              ParameterSlider(label: 'Load Mass (kg)', value: _loadMass, min: 10, max: 200, onChanged: (v){ setState(()=>_loadMass=v); _calculate(); }),
               const Spacer(),
               if (_data != null) ...[
-                if (_isLoading)
-                  const Center(child: CircularProgressIndicator())
-                else if (_data?['success'] == true) ...[
+                if (_data?['success'] == true) ...[
                   _stat('Load Force (Weight)', "${(_data?['load_force'] as num?)?.toDouble() ?? 0.0} N"),
                   _stat('Effort Required', "${(_data?['effort_required'] as num?)?.toDouble() ?? 0.0} N"),
                   const SizedBox(height: 16),
@@ -144,8 +152,9 @@ class _LeverPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTRB(leftX - 20, center.dy - boxSize, leftX + 20, center.dy), Paint()..color=Colors.redAccent);
 
     // Draw Effort Arrow
-    if (effortRequired != null) {
-      double arrowLen = 30 + (effortRequired / 10).toDouble();
+    final er = effortRequired;
+    if (er != null) {
+      double arrowLen = 30 + (er / 10).toDouble();
       _drawArrow(canvas, Offset(rightX, center.dy - arrowLen - 10), Offset(rightX, center.dy), Colors.greenAccent);
     }
   }
