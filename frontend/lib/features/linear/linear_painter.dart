@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -47,8 +46,10 @@ class LinearPainter extends CustomPainter {
     final xAxis = toCanvas(0, 0, size);
     final yAxis = toCanvas(0, 0, size);
 
-    canvas.drawLine(Offset(0, xAxis.dy), Offset(size.width, xAxis.dy), axisPaint);
-    canvas.drawLine(Offset(yAxis.dx, 0), Offset(yAxis.dx, size.height), axisPaint);
+    canvas.drawLine(
+        Offset(0, xAxis.dy), Offset(size.width, xAxis.dy), axisPaint);
+    canvas.drawLine(
+        Offset(yAxis.dx, 0), Offset(yAxis.dx, size.height), axisPaint);
   }
 
   void _drawAxisLabels(Canvas canvas, Size size) {
@@ -66,21 +67,42 @@ class LinearPainter extends CustomPainter {
       if (i == 0) continue;
       // X axis numbers below axis
       final xPt = toCanvas(i.toDouble(), 0, size);
-      _drawLabel(canvas, '$i', Offset(xPt.dx - 6, axOrigin.dy + 5), xLabelStyle);
+      _drawLabel(
+          canvas, '$i', Offset(xPt.dx - 6, axOrigin.dy + 5), xLabelStyle);
       // Y axis numbers left of axis
       final yPt = toCanvas(0, i.toDouble(), size);
-      _drawLabel(canvas, '$i', Offset(axOrigin.dx + 4, yPt.dy - 7), yLabelStyle);
+      _drawLabel(
+          canvas, '$i', Offset(axOrigin.dx + 4, yPt.dy - 7), yLabelStyle);
       // Tick marks
-      final tickPaint = Paint()..color = AppTheme.axisLine..strokeWidth = 1;
-      canvas.drawLine(Offset(xPt.dx, axOrigin.dy - 4), Offset(xPt.dx, axOrigin.dy + 4), tickPaint);
-      canvas.drawLine(Offset(axOrigin.dx - 4, yPt.dy), Offset(axOrigin.dx + 4, yPt.dy), tickPaint);
+      final tickPaint = Paint()
+        ..color = AppTheme.axisLine
+        ..strokeWidth = 1;
+      canvas.drawLine(Offset(xPt.dx, axOrigin.dy - 4),
+          Offset(xPt.dx, axOrigin.dy + 4), tickPaint);
+      canvas.drawLine(Offset(axOrigin.dx - 4, yPt.dy),
+          Offset(axOrigin.dx + 4, yPt.dy), tickPaint);
     }
     // Axis labels
-    _drawLabel(canvas, 'x', Offset(size.width - 14, axOrigin.dy + 6), TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontStyle: FontStyle.italic));
-    _drawLabel(canvas, 'y', Offset(axOrigin.dx + 6, 6), TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontStyle: FontStyle.italic));
+    _drawLabel(
+        canvas,
+        'x',
+        Offset(size.width - 14, axOrigin.dy + 6),
+        TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+            fontStyle: FontStyle.italic));
+    _drawLabel(
+        canvas,
+        'y',
+        Offset(axOrigin.dx + 6, 6),
+        TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 11,
+            fontStyle: FontStyle.italic));
   }
 
-  void _drawLabel(Canvas canvas, String text, Offset position, TextStyle style) {
+  void _drawLabel(
+      Canvas canvas, String text, Offset position, TextStyle style) {
     final tp = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: TextDirection.ltr,
@@ -131,10 +153,12 @@ class LinearPainter extends CustomPainter {
     // y-intercept
     final yIntercept = toCanvas(0, c, size);
     if (c >= yMin && c <= yMax) {
-      canvas.drawCircle(yIntercept, 7, Paint()..color = AppTheme.secondary.withOpacity(0.3));
+      canvas.drawCircle(
+          yIntercept, 7, Paint()..color = AppTheme.secondary.withOpacity(0.3));
       canvas.drawCircle(yIntercept, 5, dotPaint);
       canvas.drawCircle(yIntercept, 2.5, Paint()..color = Colors.white);
-      _drawLabelBox(canvas, '(0, ${c.toStringAsFixed(1)})', yIntercept + const Offset(8, -22), AppTheme.secondary);
+      _drawLabelBox(canvas, '(0, ${c.toStringAsFixed(1)})',
+          yIntercept + const Offset(8, -22), AppTheme.secondary);
     }
 
     // x-intercept
@@ -142,20 +166,26 @@ class LinearPainter extends CustomPainter {
       final xInt = -c / m;
       if (xInt >= xMin && xInt <= xMax) {
         final xIntercept = toCanvas(xInt, 0, size);
-        canvas.drawCircle(xIntercept, 7, Paint()..color = AppTheme.secondary.withOpacity(0.3));
+        canvas.drawCircle(xIntercept, 7,
+            Paint()..color = AppTheme.secondary.withOpacity(0.3));
         canvas.drawCircle(xIntercept, 5, dotPaint);
         canvas.drawCircle(xIntercept, 2.5, Paint()..color = Colors.white);
-        _drawLabelBox(canvas, '(${xInt.toStringAsFixed(1)}, 0)', xIntercept + const Offset(8, -22), AppTheme.secondary);
+        _drawLabelBox(canvas, '(${xInt.toStringAsFixed(1)}, 0)',
+            xIntercept + const Offset(8, -22), AppTheme.secondary);
       }
     }
   }
 
   void _drawLabelBox(Canvas canvas, String text, Offset pos, Color textColor) {
     final tp = TextPainter(
-      text: TextSpan(text: text, style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold)),
+      text: TextSpan(
+          text: text,
+          style: TextStyle(
+              color: textColor, fontSize: 12, fontWeight: FontWeight.bold)),
       textDirection: TextDirection.ltr,
     )..layout();
-    final bg = Rect.fromLTWH(pos.dx - 4, pos.dy - 2, tp.width + 8, tp.height + 4);
+    final bg =
+        Rect.fromLTWH(pos.dx - 4, pos.dy - 2, tp.width + 8, tp.height + 4);
     canvas.drawRRect(RRect.fromRectAndRadius(bg, const Radius.circular(4)),
         Paint()..color = const Color(0xFF080D1C).withOpacity(0.82));
     tp.paint(canvas, pos);
@@ -168,17 +198,21 @@ class LinearPainter extends CustomPainter {
     if (y < yMin || y > yMax) return;
 
     final pt = toCanvas(x, y, size);
-    canvas.drawCircle(pt, 10, Paint()..color = AppTheme.warning.withOpacity(0.25));
+    canvas.drawCircle(
+        pt, 10, Paint()..color = AppTheme.warning.withOpacity(0.25));
     canvas.drawCircle(pt, 6, Paint()..color = AppTheme.warning);
     canvas.drawCircle(pt, 3, Paint()..color = Colors.white);
 
     final crosshairPaint = Paint()
       ..color = AppTheme.warning.withOpacity(0.4)
       ..strokeWidth = 1;
-    canvas.drawLine(Offset(pt.dx, 0), Offset(pt.dx, size.height), crosshairPaint);
-    canvas.drawLine(Offset(0, pt.dy), Offset(size.width, pt.dy), crosshairPaint);
+    canvas.drawLine(
+        Offset(pt.dx, 0), Offset(pt.dx, size.height), crosshairPaint);
+    canvas.drawLine(
+        Offset(0, pt.dy), Offset(size.width, pt.dy), crosshairPaint);
 
-    _drawLabelBox(canvas, '(${x.toStringAsFixed(1)}, ${y.toStringAsFixed(1)})', pt + const Offset(10, -28), AppTheme.warning);
+    _drawLabelBox(canvas, '(${x.toStringAsFixed(1)}, ${y.toStringAsFixed(1)})',
+        pt + const Offset(10, -28), AppTheme.warning);
   }
 
   @override
@@ -194,5 +228,8 @@ class LinearPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(LinearPainter old) =>
-      old.m != m || old.c != c || old.hoverPoint != hoverPoint || old.animProgress != animProgress;
+      old.m != m ||
+      old.c != c ||
+      old.hoverPoint != hoverPoint ||
+      old.animProgress != animProgress;
 }

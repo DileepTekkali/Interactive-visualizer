@@ -34,7 +34,7 @@ class AppTheme {
         activeTrackColor: accent,
         inactiveTrackColor: surfaceLight,
         thumbColor: accentGlow,
-        overlayColor: accent.withOpacity(0.15),
+        overlayColor: accent.withValues(alpha: 0.15),
         valueIndicatorColor: accent,
         valueIndicatorTextStyle: GoogleFonts.inter(
           color: textPrimary,
@@ -48,12 +48,12 @@ class AppTheme {
   }
 
   static BoxDecoration get glassCard => BoxDecoration(
-        color: surface.withOpacity(0.7),
+        color: surface.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withOpacity(0.15), width: 1),
+        border: Border.all(color: accent.withValues(alpha: 0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: accent.withOpacity(0.05),
+            color: accent.withValues(alpha: 0.05),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -61,12 +61,12 @@ class AppTheme {
       );
 
   static BoxDecoration get glassCardHighlight => BoxDecoration(
-        color: surfaceLight.withOpacity(0.8),
+        color: surfaceLight.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withOpacity(0.4), width: 1),
+        border: Border.all(color: accent.withValues(alpha: 0.4), width: 1),
         boxShadow: [
           BoxShadow(
-            color: accent.withOpacity(0.15),
+            color: accent.withValues(alpha: 0.15),
             blurRadius: 24,
             spreadRadius: 2,
           ),

@@ -15,10 +15,6 @@ class DataHandlingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.clipRect(Offset.zero & size);
-    
-    final paint = Paint()
-      ..color = AppTheme.secondary.withOpacity(0.3)
-      ..style = PaintingStyle.fill;
 
     final axisPaint = Paint()
       ..color = AppTheme.axisLine
@@ -53,7 +49,7 @@ class DataHandlingPainter extends CustomPainter {
       final y = size.height - margin - barHeight;
 
       final rect = Rect.fromLTWH(x, y, barWidth, barHeight);
-      
+
       final gradient = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -73,7 +69,10 @@ class DataHandlingPainter extends CustomPainter {
         canvas,
         values[i].toStringAsFixed(1),
         Offset(x + barWidth / 2 - 10, y - 20),
-        TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
+        TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.bold),
       );
 
       // Draw category text
@@ -96,6 +95,7 @@ class DataHandlingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(DataHandlingPainter oldDelegate) {
-    return oldDelegate.values != values || oldDelegate.animProgress != animProgress;
+    return oldDelegate.values != values ||
+        oldDelegate.animProgress != animProgress;
   }
 }
