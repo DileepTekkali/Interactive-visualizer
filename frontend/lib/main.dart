@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants.dart';
-import 'features/home/home_screen.dart';
+import 'features/dashboard/dashboard_screen.dart';
 import 'features/linear/linear_screen.dart';
 import 'features/quadratic/quadratic_screen.dart';
 import 'features/geometry/geometry_screen.dart';
@@ -57,7 +57,7 @@ class MathVizApp extends StatelessWidget {
       theme: AppTheme.dark,
       initialRoute: AppRoutes.home,
       routes: {
-        AppRoutes.home: (context) => const HomeScreen(),
+        AppRoutes.home: (context) => const DashboardScreen(),
         AppRoutes.linear: (context) => const LinearScreen(),
         AppRoutes.quadratic: (context) => const QuadraticScreen(),
         AppRoutes.geometry: (context) => const GeometryScreen(),
@@ -74,7 +74,7 @@ class MathVizApp extends StatelessWidget {
         '/conic_sections': (context) => const ConicSectionsScreen(),
         '/complex_numbers': (context) => const ComplexNumbersScreen(),
         '/linear_programming': (context) => const LinearProgrammingScreen(),
-        
+
         // Chemistry Routes
         '/chemistry/separation': (context) => const SeparationScreen(),
         '/chemistry/change_detector': (context) => const ChangeDetectorScreen(),
