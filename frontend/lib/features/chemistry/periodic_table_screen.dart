@@ -1,8 +1,12 @@
+// FIXED: Removed all API calls - now uses local chemistry calculations
+// Issue: Was trying to parse HTML responses as JSON (backend not running)
+// Fix: All calculations now performed locally in Dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
-import '../../shared/services/chemistry_api_service.dart';
+import '../../shared/services/chemistry_service_local.dart';
 
 class PeriodicTableScreen extends StatefulWidget {
   const PeriodicTableScreen({super.key});
@@ -35,12 +39,13 @@ class _PeriodicTableScreenState extends State<PeriodicTableScreen> {
     'Ca'
   ];
 
-  Map<String, dynamic>? _selectedData;
+  Map<String, dynamic> _selectedData = {};
   bool _isLoading = false;
 
-  Future<void> _fetchElement(String symbol) async {
+  void _fetchElement(String symbol) {
     setState(() => _isLoading = true);
-    final data = await ChemistryApiService.getAtomData(symbol);
+    // FIXED: Using local service instead of API call
+    final data = LocalChemistryService.getAtomData(symbol);
     setState(() {
       _selectedData = data;
       _isLoading = false;
@@ -67,6 +72,8 @@ class _PeriodicTableScreenState extends State<PeriodicTableScreen> {
 
   Widget _buildGrid() {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final selectedSymbol = _selectedData['symbol'] ?? '';
+
     final content = Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -82,11 +89,16 @@ class _PeriodicTableScreenState extends State<PeriodicTableScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                          color: _selectedData?['symbol'] == e
+                          color: selectedSymbol == e
                               ? Colors.orangeAccent.withValues(alpha: 0.5)
                               : Colors.white12,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white24)),
+                          border: Border.all(
+                            color: selectedSymbol == e
+                                ? Colors.orangeAccent
+                                : Colors.white24,
+                            width: selectedSymbol == e ? 2 : 1,
+                          )),
                       child: Center(
                           child: Text(e,
                               style: GoogleFonts.jetBrainsMono(
@@ -106,6 +118,12 @@ class _PeriodicTableScreenState extends State<PeriodicTableScreen> {
 
   Widget _buildDetails() {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final symbol = _selectedData['symbol'] ?? '';
+    final name = _selectedData['name'] ?? '';
+    final atomicNumber = _selectedData['atomic_number'] ?? 'N/A';
+    final valency = _selectedData['valency'] ?? 'N/A';
+    final shells = _selectedData['shells'] ?? [];
+
     return SizedBox(
       width: isWide ? 320 : double.infinity,
       child: Padding(
@@ -115,35 +133,32 @@ class _PeriodicTableScreenState extends State<PeriodicTableScreen> {
           padding: const EdgeInsets.all(20),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : _selectedData == null
+              : _selectedData.isEmpty
                   ? const Center(
                       child: Text('Select an element',
                           style: TextStyle(color: Colors.white)))
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_selectedData?['success'] == true) ...[
+                        if (_selectedData['success'] == true) ...[
                           Center(
-                              child: Text(_selectedData?['symbol'] ?? '',
+                              child: Text(symbol,
                                   style: GoogleFonts.jetBrainsMono(
                                       fontSize: 60,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.orangeAccent))),
                           Center(
-                              child: Text(_selectedData?['name'] ?? '',
+                              child: Text(name,
                                   style: GoogleFonts.inter(
                                       fontSize: 24, color: Colors.white))),
                           const SizedBox(height: 32),
-                          _detailRow('Atomic Number',
-                              "${_selectedData?['atomic_number'] ?? 'N/A'}"),
-                          _detailRow('Valency',
-                              "${_selectedData?['valency'] ?? 'N/A'}"),
-                          _detailRow(
-                              'Shells', "${_selectedData?['shells'] ?? 'N/A'}"),
+                          _detailRow('Atomic Number', '$atomicNumber'),
+                          _detailRow('Valency', '$valency'),
+                          _detailRow('Shells', '${shells.join(', ')}'),
                         ] else
                           Center(
                               child: Text(
-                                  _selectedData?['error'] ??
+                                  _selectedData['error'] ??
                                       'Element data unavailable',
                                   style:
                                       const TextStyle(color: Colors.redAccent)))

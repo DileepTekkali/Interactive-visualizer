@@ -1,8 +1,12 @@
+// FIXED: Removed all API calls - now uses local chemistry calculations
+// Issue: Was trying to parse HTML responses as JSON (backend not running)
+// Fix: All calculations now performed locally in Dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
-import '../../shared/services/chemistry_api_service.dart';
+import '../../shared/services/chemistry_service_local.dart';
 import 'dart:math' as math;
 
 class SeparationScreen extends StatefulWidget {
@@ -36,15 +40,16 @@ class _SeparationScreenState extends State<SeparationScreen>
     super.dispose();
   }
 
-  Future<void> _fetchData() async {
+  void _fetchData() {
     setState(() {
       _isLoading = true;
       _currentStepIndex = 0;
     });
-    final data = await ChemistryApiService.separationProcess(_method);
+    // FIXED: Using local service instead of API call
+    final data = LocalChemistryService.separationProcess(_method);
     if (data['success'] == true) {
       setState(() {
-        _steps = data['steps'];
+        _steps = data['steps'] as List<dynamic>;
       });
       _animController.forward(from: 0.0);
     }
@@ -130,7 +135,7 @@ class _SeparationScreenState extends State<SeparationScreen>
                       letterSpacing: 1.2)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                initialValue: _method,
+                value: _method,
                 dropdownColor: AppTheme.surfaceLight,
                 style: GoogleFonts.inter(color: Colors.white),
                 items: ['filtration', 'evaporation']
@@ -149,7 +154,7 @@ class _SeparationScreenState extends State<SeparationScreen>
                 const Center(child: CircularProgressIndicator())
               else if (_steps.isNotEmpty) ...[
                 Text(
-                    'Current Step: \${_currentStepIndex + 1} of \${_steps.length}',
+                    'Current Step: ${_currentStepIndex + 1} of ${_steps.length}',
                     style: GoogleFonts.inter(
                         color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
@@ -222,9 +227,7 @@ class _SeparationPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     if (method == 'filtration') {
-      // Step 0: Mixture
       if (stepIndex == 0) {
-        // Draw funnel above
         canvas.drawPath(
             Path()
               ..moveTo(center.dx - 50, center.dy - 120)
@@ -238,7 +241,6 @@ class _SeparationPainter extends CustomPainter {
         canvas.drawCircle(
             Offset(center.dx, center.dy - 90), 10 * progress, solidPaint);
       } else if (stepIndex == 1) {
-        // Liquid passing
         canvas.drawPath(
             Path()
               ..moveTo(center.dx - 50, center.dy - 120)
@@ -257,10 +259,8 @@ class _SeparationPainter extends CustomPainter {
             Rect.fromLTRB(center.dx - 58, center.dy + 80 - (50 * progress),
                 center.dx + 58, center.dy + 80),
             fillPaint);
-        canvas.drawCircle(
-            Offset(center.dx, center.dy - 90), 10, solidPaint); // Solid remains
+        canvas.drawCircle(Offset(center.dx, center.dy - 90), 10, solidPaint);
       } else {
-        // Step 2: Residue & Filtrate
         canvas.drawPath(
             Path()
               ..moveTo(center.dx - 50, center.dy - 120)
@@ -272,17 +272,15 @@ class _SeparationPainter extends CustomPainter {
         canvas.drawRect(
             Rect.fromLTRB(
                 center.dx - 58, center.dy + 30, center.dx + 58, center.dy + 80),
-            fillPaint); // Water
-        canvas.drawCircle(
-            Offset(center.dx, center.dy - 90), 10, solidPaint); // Solid
+            fillPaint);
+        canvas.drawCircle(Offset(center.dx, center.dy - 90), 10, solidPaint);
       }
     } else {
-      // Evaporation
       if (stepIndex == 0) {
         canvas.drawRect(
             Rect.fromLTRB(
                 center.dx - 58, center.dy + 20, center.dx + 58, center.dy + 80),
-            fillPaint); // Mixture
+            fillPaint);
         canvas.drawCircle(Offset(center.dx, center.dy + 60), 5, solidPaint);
         canvas.drawCircle(
             Offset(center.dx - 20, center.dy + 70), 5, solidPaint);
@@ -296,7 +294,6 @@ class _SeparationPainter extends CustomPainter {
                 center.dx + 58,
                 center.dy + 80),
             fillPaint);
-        // Gas particles
         for (int i = 0; i < 5; i++) {
           canvas.drawCircle(
               Offset(center.dx - 40 + i * 20, center.dy - 50 * progress),
@@ -309,7 +306,6 @@ class _SeparationPainter extends CustomPainter {
         canvas.drawCircle(
             Offset(center.dx + 20, center.dy + 50), 5, solidPaint);
       } else {
-        // Crystals remain
         canvas.drawCircle(Offset(center.dx, center.dy + 60), 5, solidPaint);
         canvas.drawCircle(
             Offset(center.dx - 20, center.dy + 70), 5, solidPaint);

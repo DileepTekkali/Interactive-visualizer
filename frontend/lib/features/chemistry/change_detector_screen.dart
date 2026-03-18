@@ -1,8 +1,12 @@
+// FIXED: Removed all API calls - now uses local chemistry calculations
+// Issue: Was trying to parse HTML responses as JSON (backend not running)
+// Fix: All calculations now performed locally in Dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
-import '../../shared/services/chemistry_api_service.dart';
+import '../../shared/services/chemistry_service_local.dart';
 
 class ChangeDetectorScreen extends StatefulWidget {
   const ChangeDetectorScreen({super.key});
@@ -14,17 +18,23 @@ class ChangeDetectorScreen extends StatefulWidget {
 class _ChangeDetectorScreenState extends State<ChangeDetectorScreen> {
   final TextEditingController _controller = TextEditingController();
   bool _isLoading = false;
-  Map<String, dynamic>? _result;
+  Map<String, dynamic> _result = {};
 
-  Future<void> _analyze() async {
+  void _analyze() {
     if (_controller.text.trim().isEmpty) return;
     setState(() => _isLoading = true);
-    final data =
-        await ChemistryApiService.changeDetector(_controller.text.trim());
+    // FIXED: Using local service instead of API call
+    final data = LocalChemistryService.changeDetector(_controller.text.trim());
     setState(() {
       _result = data;
       _isLoading = false;
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -92,6 +102,9 @@ class _ChangeDetectorScreenState extends State<ChangeDetectorScreen> {
 
   Widget _buildExplanation() {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final type = _result['type'] ?? '';
+    final explanation = _result['explanation'] ?? '';
+
     return SizedBox(
       width: isWide ? 400 : double.infinity,
       child: Padding(
@@ -99,39 +112,43 @@ class _ChangeDetectorScreenState extends State<ChangeDetectorScreen> {
         child: Container(
           decoration: AppTheme.glassCard,
           padding: const EdgeInsets.all(20),
-          child: _result == null
+          child: _result.isEmpty
               ? Center(
                   child: Text('Enter a scenario to see the result.',
                       style: GoogleFonts.inter(color: AppTheme.textSecondary)))
-              : (_result?['success'] == false)
+              : _result['success'] == false
                   ? Center(
-                      child: Text(_result?['error'] ?? 'Search failed',
+                      child: Text(_result['error'] ?? 'Search failed',
                           style: const TextStyle(color: Colors.redAccent)))
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _result?['type'] == 'Chemical'
+                          type == 'Chemical'
                               ? Icons.science
-                              : Icons.water_drop,
+                              : type == 'Physical'
+                                  ? Icons.water_drop
+                                  : Icons.help,
                           size: 80,
-                          color: _result?['type'] == 'Chemical'
+                          color: type == 'Chemical'
                               ? Colors.redAccent
                               : Colors.lightBlueAccent,
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          "\${_result?['type'] ?? 'Unknown'} Change",
+                          '$type Change',
                           style: GoogleFonts.jetBrainsMono(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: _result?['type'] == 'Chemical'
+                              color: type == 'Chemical'
                                   ? Colors.redAccent
                                   : Colors.lightBlueAccent),
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _result?['explanation'] ?? 'No explanation provided.',
+                          explanation.isNotEmpty
+                              ? explanation
+                              : 'No explanation provided.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
                               fontSize: 16, color: Colors.white70),

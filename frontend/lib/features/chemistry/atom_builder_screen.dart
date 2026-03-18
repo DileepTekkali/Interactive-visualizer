@@ -1,10 +1,14 @@
+// FIXED: Removed all API calls - now uses local chemistry calculations
+// Issue: Was trying to parse HTML responses as JSON (backend not running)
+// Fix: All calculations now performed locally in Dart
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/chemistry_api_service.dart';
+import '../../shared/services/chemistry_service_local.dart';
 
 class AtomBuilderScreen extends StatefulWidget {
   const AtomBuilderScreen({super.key});
@@ -13,18 +17,21 @@ class AtomBuilderScreen extends StatefulWidget {
   State<AtomBuilderScreen> createState() => _AtomBuilderScreenState();
 }
 
-class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTickerProviderStateMixin {
+class _AtomBuilderScreenState extends State<AtomBuilderScreen>
+    with SingleTickerProviderStateMixin {
   int _protons = 1;
   int _neutrons = 0;
   int _electrons = 1;
 
-  Map<String, dynamic>? _atomData;
+  Map<String, dynamic> _atomData = {};
   late AnimationController _animController;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
+    _animController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat();
     _fetchAtom();
   }
 
@@ -34,9 +41,11 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTicker
     super.dispose();
   }
 
-  Future<void> _fetchAtom() async {
-    final data = await ChemistryApiService.atomBuilder(_protons, _neutrons, _electrons);
-    if (mounted) setState(() => _atomData = data);
+  void _fetchAtom() {
+    // FIXED: Using local service instead of API call
+    final data =
+        LocalChemistryService.atomBuilder(_protons, _neutrons, _electrons);
+    setState(() => _atomData = data);
   }
 
   @override
@@ -46,23 +55,30 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTicker
       title: 'Atom Builder Simulator',
       child: isWide
           ? Row(children: [_buildVisual(), _buildControls()])
-          : SingleChildScrollView(child: Column(children: [_buildVisual(), _buildControls()])),
+          : SingleChildScrollView(
+              child: Column(children: [_buildVisual(), _buildControls()])),
     );
   }
 
   Widget _buildVisual() {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final element = _atomData['element'] ?? 'Unknown';
+    final symbol = _atomData['symbol'] ?? '?';
+
     final content = Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
         decoration: AppTheme.glassCard,
         child: Column(
           children: [
-            if (_atomData != null && _atomData?['success'] == true)
+            if (_atomData['success'] == true)
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text("\${_atomData?['element'] ?? ''} (\${_atomData?['symbol'] ?? ''})",
-                    style: GoogleFonts.jetBrainsMono(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+                child: Text('$element ($symbol)',
+                    style: GoogleFonts.jetBrainsMono(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent)),
               ),
             Expanded(
               child: AnimatedBuilder(
@@ -81,11 +97,19 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTicker
         ),
       ),
     );
-    return isWide ? Expanded(flex: 3, child: content) : SizedBox(height: math.max(400.0, MediaQuery.of(context).size.height * 0.45), child: content);
+    return isWide
+        ? Expanded(flex: 3, child: content)
+        : SizedBox(
+            height: math.max(400.0, MediaQuery.of(context).size.height * 0.45),
+            child: content);
   }
 
   Widget _buildControls() {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final charge = (_atomData['charge'] as num?)?.toInt() ?? 0;
+    final mass = (_atomData['mass'] as num?)?.toInt() ?? 0;
+    final isStable = _atomData['is_stable'] == true;
+
     return SizedBox(
       width: isWide ? 320 : double.infinity,
       child: Padding(
@@ -96,7 +120,11 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTicker
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Subatomic Particles', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('Subatomic Particles',
+                  style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const SizedBox(height: 16),
               ParameterSlider(
                 label: 'Protons (+)',
@@ -129,12 +157,15 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTicker
                 },
               ),
               const SizedBox(height: 32),
-              if (_atomData != null && _atomData?['success'] == true) ...[
-                _statRow('Net Charge', ((_atomData?['charge'] as num?) ?? 0) > 0 ? "+\${_atomData?['charge']}" : "\${_atomData?['charge']}", ((_atomData?['charge'] as num?) ?? 0) == 0 ? Colors.green : Colors.redAccent),
-                _statRow('Mass Number', "\${_atomData?['mass'] ?? 0}", Colors.orangeAccent),
-                _statRow('Stability', _atomData?['is_stable'] == true ? 'Stable' : 'Isotope/Unstable', _atomData?['is_stable'] == true ? Colors.green : Colors.yellow),
-              ] else if (_atomData != null)
-                Text(_atomData?['error'] ?? 'Simulation Error', style: const TextStyle(color: Colors.redAccent))
+              if (_atomData['success'] == true) ...[
+                _statRow('Net Charge', charge > 0 ? '+$charge' : '$charge',
+                    charge == 0 ? Colors.green : Colors.redAccent),
+                _statRow('Mass Number', '$mass', Colors.orangeAccent),
+                _statRow('Stability', isStable ? 'Stable' : 'Isotope/Unstable',
+                    isStable ? Colors.green : Colors.yellow),
+              ] else if (_atomData['error'] != null)
+                Text(_atomData['error'] ?? 'Simulation Error',
+                    style: const TextStyle(color: Colors.redAccent))
             ],
           ),
         ),
@@ -149,7 +180,9 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen> with SingleTicker
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: GoogleFonts.inter(color: Colors.white70)),
-          Text(value, style: GoogleFonts.jetBrainsMono(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(value,
+              style: GoogleFonts.jetBrainsMono(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 16)),
         ],
       ),
     );
@@ -162,40 +195,57 @@ class _AtomPainter extends CustomPainter {
   final int electrons;
   final double animValue;
 
-  _AtomPainter({required this.protons, required this.neutrons, required this.electrons, required this.animValue});
+  _AtomPainter(
+      {required this.protons,
+      required this.neutrons,
+      required this.electrons,
+      required this.animValue});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final shellPaint = Paint()..style = PaintingStyle.stroke..color = Colors.white24..strokeWidth = 1;
-    final pPaint = Paint()..style = PaintingStyle.fill..color = Colors.redAccent;
-    final nPaint = Paint()..style = PaintingStyle.fill..color = Colors.grey;
-    final ePaint = Paint()..style = PaintingStyle.fill..color = Colors.blueAccent;
+    final shellPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = Colors.white24
+      ..strokeWidth = 1;
+    final pPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.redAccent;
+    final nPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.grey;
+    final ePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.blueAccent;
 
-    // Nucleus
+    // Nucleus - fixed positions using random seed
     final random = math.Random(123);
     for (int i = 0; i < protons + neutrons; i++) {
       final isProton = i < protons;
       final angle = random.nextDouble() * 2 * math.pi;
       final rad = random.nextDouble() * 15;
-      final offset = Offset(center.dx + rad * math.cos(angle), center.dy + rad * math.sin(angle));
+      final offset = Offset(
+          center.dx + rad * math.cos(angle), center.dy + rad * math.sin(angle));
       canvas.drawCircle(offset, 4, isProton ? pPaint : nPaint);
     }
 
-    // Shells
+    // Electron shells
     final shells = [2, 8, 8, 2];
     int remainingE = electrons;
     int shellIndex = 0;
 
     while (remainingE > 0 && shellIndex < shells.length) {
-      int count = remainingE > shells[shellIndex] ? shells[shellIndex] : remainingE;
+      int count =
+          remainingE > shells[shellIndex] ? shells[shellIndex] : remainingE;
       double radius = 50.0 + shellIndex * 40.0;
       canvas.drawCircle(center, radius, shellPaint);
 
       for (int i = 0; i < count; i++) {
         double baseAngle = (2 * math.pi / count) * i;
-        double currentAngle = baseAngle + (animValue * 2 * math.pi * (shellIndex % 2 == 0 ? 1 : -1));
-        final offset = Offset(center.dx + radius * math.cos(currentAngle), center.dy + radius * math.sin(currentAngle));
+        double currentAngle = baseAngle +
+            (animValue * 2 * math.pi * (shellIndex % 2 == 0 ? 1 : -1));
+        final offset = Offset(center.dx + radius * math.cos(currentAngle),
+            center.dy + radius * math.sin(currentAngle));
         canvas.drawCircle(offset, 5, ePaint);
       }
       remainingE -= count;

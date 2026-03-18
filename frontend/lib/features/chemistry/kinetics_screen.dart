@@ -1,11 +1,14 @@
+// FIXED: Removed all API calls - now uses local chemistry calculations
+// Issue: Was trying to parse HTML responses as JSON (backend not running)
+// Fix: All calculations now performed locally in Dart
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/main_layout.dart';
 import '../../shared/widgets/parameter_slider.dart';
-import '../../shared/services/chemistry_api_service.dart';
-import 'dart:math' as math;
+import '../../shared/services/chemistry_service_local.dart';
 
 class KineticsScreen extends StatefulWidget {
   const KineticsScreen({super.key});
@@ -18,7 +21,7 @@ class _KineticsScreenState extends State<KineticsScreen> {
   double _c0 = 1.0;
   double _k = 0.1;
   int _order = 1;
-  Map<String, dynamic>? _data;
+  Map<String, dynamic> _data = {};
   bool _isLoading = false;
 
   @override
@@ -27,9 +30,10 @@ class _KineticsScreenState extends State<KineticsScreen> {
     _fetch();
   }
 
-  Future<void> _fetch() async {
+  void _fetch() {
     setState(() => _isLoading = true);
-    final data = await ChemistryApiService.kineticsGraph(_c0, _k, _order);
+    // FIXED: Using local service instead of API call
+    final data = LocalChemistryService.kineticsGraph(_c0, _k, _order);
     setState(() {
       _data = data;
       _isLoading = false;
@@ -64,8 +68,12 @@ class _KineticsScreenState extends State<KineticsScreen> {
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
             Expanded(
-              child: _isLoading || _data == null || _data?['success'] == false
-                  ? const Center(child: CircularProgressIndicator())
+              child: _isLoading || _data['success'] != true
+                  ? Center(
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : Text(_data['error'] ?? 'Insufficient data',
+                              style: const TextStyle(color: Colors.white54)))
                   : _buildFlChart(),
             ),
           ],
@@ -78,17 +86,22 @@ class _KineticsScreenState extends State<KineticsScreen> {
   }
 
   Widget _buildFlChart() {
-    List<dynamic> timeList = _data?['time'] ?? [];
-    List<dynamic> cList = _data?['concentration'] ?? [];
+    final timeList = (_data['time'] as List<dynamic>?) ?? [];
+    final cList = (_data['concentration'] as List<dynamic>?) ?? [];
     List<FlSpot> spots = [];
-    if (timeList.isEmpty || cList.isEmpty)
+
+    for (int i = 0; i < timeList.length && i < cList.length; i++) {
+      final t = (timeList[i] as num?)?.toDouble();
+      final c = (cList[i] as num?)?.toDouble();
+      if (t != null && c != null) {
+        spots.add(FlSpot(t, c));
+      }
+    }
+
+    if (spots.isEmpty) {
       return const Center(
           child: Text('Insufficient kinetics data',
               style: TextStyle(color: Colors.white54)));
-
-    for (int i = 0; i < math.min(timeList.length, cList.length); i++) {
-      spots.add(FlSpot(
-          (timeList[i] as num).toDouble(), (cList[i] as num).toDouble()));
     }
 
     return LineChart(
@@ -102,19 +115,23 @@ class _KineticsScreenState extends State<KineticsScreen> {
                 FlLine(color: Colors.white12, strokeWidth: 1)),
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(
+              axisNameWidget: const Text('Conc (M)',
+                  style: TextStyle(color: Colors.white, fontSize: 12)),
               sideTitles: SideTitles(
                   showTitles: true,
-                  reservedSize: 40,
+                  reservedSize: 45,
                   getTitlesWidget: (v, m) => Text(v.toStringAsFixed(1),
                       style: const TextStyle(
-                          color: Colors.white54, fontSize: 10)))),
+                          color: Colors.white70, fontSize: 10)))),
           bottomTitles: AxisTitles(
+              axisNameWidget: const Text('Time (s)',
+                  style: TextStyle(color: Colors.white, fontSize: 12)),
               sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 30,
                   getTitlesWidget: (v, m) => Text(v.toStringAsFixed(0),
                       style: const TextStyle(
-                          color: Colors.white54, fontSize: 10)))),
+                          color: Colors.white70, fontSize: 10)))),
           topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
@@ -123,7 +140,7 @@ class _KineticsScreenState extends State<KineticsScreen> {
         minX: 0,
         maxX: 50,
         minY: 0,
-        maxY: math.max(_c0 * 1.2, 1.2),
+        maxY: _c0 * 1.2,
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -142,6 +159,8 @@ class _KineticsScreenState extends State<KineticsScreen> {
 
   Widget _buildControls() {
     final isWide = MediaQuery.of(context).size.width > 800;
+    final orderNames = {0: 'Zero Order', 1: 'First Order', 2: 'Second Order'};
+
     return SizedBox(
       width: isWide ? 320 : double.infinity,
       child: Padding(
@@ -158,18 +177,18 @@ class _KineticsScreenState extends State<KineticsScreen> {
                         color: Colors.white, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<int>(
-                  initialValue: _order,
+                  value: _order,
                   dropdownColor: AppTheme.surfaceLight,
                   style: const TextStyle(color: Colors.white),
                   items: [0, 1, 2]
                       .map((e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(
-                              '\$e\${e == 0 ? " (Zero)" : e == 1 ? " (First)" : " (Second)"}')))
+                          value: e, child: Text(orderNames[e] ?? 'Order $e')))
                       .toList(),
                   onChanged: (v) {
-                    setState(() => _order = v!);
-                    _fetch();
+                    if (v != null) {
+                      setState(() => _order = v);
+                      _fetch();
+                    }
                   },
                 ),
                 const SizedBox(height: 24),
@@ -191,6 +210,33 @@ class _KineticsScreenState extends State<KineticsScreen> {
                       setState(() => _k = v);
                       _fetch();
                     }),
+                const SizedBox(height: 16),
+                // Formula display
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceLight.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Rate Law:',
+                          style: GoogleFonts.inter(
+                              color: Colors.orangeAccent,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        _order == 0
+                            ? 'Rate = k'
+                            : _order == 1
+                                ? 'Rate = k[A]'
+                                : 'Rate = k[A]²',
+                        style: GoogleFonts.jetBrainsMono(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
