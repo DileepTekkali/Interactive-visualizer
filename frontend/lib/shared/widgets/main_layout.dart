@@ -54,7 +54,7 @@ class MainLayout extends StatelessWidget {
                         color: AppTheme.accent, size: 20),
                   ),
                 Text(
-                  'study_viz',
+                  title,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w700,
                     color: isHome ? AppTheme.accent : AppTheme.textPrimary,

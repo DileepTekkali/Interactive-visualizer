@@ -33,11 +33,11 @@ class DashboardScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Math & Science',
+                        'study_viz',
                         style: GoogleFonts.inter(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.accent,
                           letterSpacing: -0.5,
                         ),
                       ),
