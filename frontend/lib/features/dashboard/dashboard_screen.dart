@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/app_sidebar.dart';
 import 'math_screen.dart';
 import 'physics_screen.dart';
 import 'chemistry_screen.dart';
@@ -15,6 +16,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
+      endDrawer: const AppSidebar(),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -52,9 +54,13 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.search, color: AppTheme.textSecondary),
-                  onPressed: () {},
+                Builder(
+                  builder: (ctx) => IconButton(
+                    icon: const Icon(Icons.menu_rounded,
+                        color: AppTheme.textSecondary),
+                    tooltip: 'Open Navigation',
+                    onPressed: () => Scaffold.of(ctx).openEndDrawer(),
+                  ),
                 ),
                 const SizedBox(width: 8),
               ],

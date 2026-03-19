@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants.dart';
 import '../../shared/widgets/subtopic_card.dart';
+import '../../shared/widgets/app_sidebar.dart';
 
 class MathScreen extends StatelessWidget {
   const MathScreen({super.key});
@@ -14,6 +15,7 @@ class MathScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
+      endDrawer: const AppSidebar(),
       body: CustomScrollView(
         slivers: [
           // App Bar
@@ -33,9 +35,13 @@ class MathScreen extends StatelessWidget {
               ),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.search, color: AppTheme.textSecondary),
-                onPressed: () {},
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu_rounded,
+                      color: AppTheme.textSecondary),
+                  tooltip: 'Open Navigation',
+                  onPressed: () => Scaffold.of(ctx).openEndDrawer(),
+                ),
               ),
               const SizedBox(width: 8),
             ],
