@@ -57,9 +57,6 @@ class AppSidebar extends StatelessWidget {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _buildHomeTile(context),
-                const Divider(color: AppTheme.axisLine, height: 1),
-
                 // MATHEMATICS Section
                 _buildSectionHeader('MATHEMATICS', Icons.calculate),
                 _buildSubjectTile(
@@ -260,30 +257,6 @@ class AppSidebar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildHomeTile(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppTheme.accent.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.home, color: AppTheme.accent),
-      ),
-      title: Text('Home / Dashboard',
-          style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary)),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.pushNamedAndRemoveUntil(
-            context, AppRoutes.home, (route) => false);
-      },
-      hoverColor: AppTheme.accent.withValues(alpha: 0.1),
     );
   }
 
