@@ -1,11 +1,11 @@
 {
-    "name": "math_viz",
-    "short_name": "math_viz",
+    "name": "study_viz",
+    "short_name": "study_viz",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A0E1A",
+    "theme_color": "#6C63FF",
+    "description": "Interactive Math Visualization Platform",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

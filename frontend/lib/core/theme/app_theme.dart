@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
@@ -15,6 +16,37 @@ class AppTheme {
   static const Color gridLine = Color(0xFF1E2A45);
   static const Color axisLine = Color(0xFF2E3D60);
 
+  static TextTheme _getTextTheme() {
+    try {
+      return GoogleFonts.interTextTheme().apply(
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      );
+    } catch (e) {
+      return const TextTheme();
+    }
+  }
+
+  static TextStyle _getTextStyle({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    try {
+      return GoogleFonts.inter(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color ?? textPrimary,
+      );
+    } catch (e) {
+      return TextStyle(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color ?? textPrimary,
+      );
+    }
+  }
+
   static ThemeData get dark {
     return ThemeData(
       useMaterial3: true,
@@ -26,18 +58,14 @@ class AppTheme {
         onPrimary: textPrimary,
         onSurface: textPrimary,
       ),
-      textTheme: GoogleFonts.interTextTheme().apply(
-        bodyColor: textPrimary,
-        displayColor: textPrimary,
-      ),
+      textTheme: _getTextTheme(),
       sliderTheme: SliderThemeData(
         activeTrackColor: accent,
         inactiveTrackColor: surfaceLight,
         thumbColor: accentGlow,
         overlayColor: accent.withValues(alpha: 0.15),
         valueIndicatorColor: accent,
-        valueIndicatorTextStyle: GoogleFonts.inter(
-          color: textPrimary,
+        valueIndicatorTextStyle: _getTextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
