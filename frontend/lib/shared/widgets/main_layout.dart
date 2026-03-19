@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants.dart';
 import 'app_sidebar.dart';
 
 class MainLayout extends StatelessWidget {
@@ -20,31 +21,53 @@ class MainLayout extends StatelessWidget {
     final isHome = title == 'Home / Dashboard';
     return Scaffold(
       backgroundColor: AppTheme.background,
-      endDrawer: const AppSidebar(), // Right-side drawer
+      endDrawer: const AppSidebar(),
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
         elevation: 0,
         automaticallyImplyLeading: false,
-        // Back arrow on the left for non-home screens
         leading: isHome
             ? null
             : IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary),
-                tooltip: 'Back to Home',
-                onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    color: AppTheme.textPrimary),
+                tooltip: 'Go Back',
+                onPressed: () => Navigator.pop(context),
               ),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-            fontSize: 18,
+        title: GestureDetector(
+          onTap: () {
+            if (!isHome) {
+              Navigator.pushNamedAndRemoveUntil(
+                  context, AppRoutes.home, (route) => false);
+            }
+          },
+          child: MouseRegion(
+            cursor:
+                isHome ? SystemMouseCursors.basic : SystemMouseCursors.click,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isHome)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(Icons.home_rounded,
+                        color: AppTheme.accent, size: 20),
+                  ),
+                Text(
+                  'study_viz',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    color: isHome ? AppTheme.accent : AppTheme.textPrimary,
+                    fontSize: 18,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
-          // Existing actions (e.g., refresh buttons)
           if (actions != null) ...actions!,
-          // Hamburger / menu icon always at top-right
           Builder(
             builder: (ctx) => IconButton(
               icon: const Icon(Icons.menu_rounded, color: AppTheme.textPrimary),

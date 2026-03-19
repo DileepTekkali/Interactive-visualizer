@@ -64,32 +64,46 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
+    final controlWidth = isWide ? 320.0 : screenWidth * 0.9;
     return MainLayout(
       title: 'Kinematics Motion Graph',
       child: isWide
-          ? Row(children: [_buildVisual(), _buildControls()])
+          ? Row(children: [_buildVisual(), _buildControls(controlWidth)])
           : SingleChildScrollView(
-              child: Column(children: [_buildVisual(), _buildControls()])),
+              child: Column(children: [
+              _buildVisual(),
+              _buildControls(screenWidth * 0.9)
+            ])),
     );
   }
 
   Widget _buildVisual() {
-    final isWide = MediaQuery.of(context).size.width > 800;
+    final isWide = MediaQuery.of(context).size.width > 900;
     final content = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Container(
         decoration: AppTheme.glassCard,
         child: Column(
           children: [
             Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Position & Velocity over Time',
-                  style: GoogleFonts.inter(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Text(
+                      'Position & Velocity over Time',
+                      style: GoogleFonts.inter(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    _buildValueTag('a=${_accel.toStringAsFixed(1)} m/s²',
+                        Colors.redAccent),
+                    _buildValueTag('u=${_initialV.toStringAsFixed(1)} m/s',
+                        Colors.blueAccent),
+                  ],
                 )),
             Expanded(
               child: _data['success'] != true
@@ -97,7 +111,7 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
                       child: Text(_data['error'] ?? 'Loading...',
                           style: const TextStyle(color: Colors.white54)))
                   : Padding(
-                      padding: const EdgeInsets.all(16), child: _buildChart()),
+                      padding: const EdgeInsets.all(12), child: _buildChart()),
             ),
           ],
         ),
@@ -105,8 +119,19 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
     );
     return isWide
         ? Expanded(flex: 3, child: content)
-        : SizedBox(height: 500, child: content);
+        : SizedBox(height: 450, child: content);
   }
+
+  Widget _buildValueTag(String text, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color)),
+        child: Text(text,
+            style: GoogleFonts.inter(
+                fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+      );
 
   Widget _buildChart() {
     final timeList = (_data['time'] as List<dynamic>?)?.cast<num>() ?? [];
@@ -171,69 +196,78 @@ class _MotionGraphScreenState extends State<MotionGraphScreen> {
         ]));
   }
 
-  Widget _buildControls() {
-    final isWide = MediaQuery.of(context).size.width > 800;
+  Widget _buildControls(double width) {
+    final isWide = MediaQuery.of(context).size.width > 900;
     return SizedBox(
-        width: isWide ? 320 : double.infinity,
-        child: Padding(
-            padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
-            child: Container(
-                decoration: AppTheme.glassCard,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // FIXED: Added setState wrapper to ensure UI rebuilds
-                      ParameterSlider(
-                          label: 'Acceleration (m/s²)',
-                          value: _accel,
-                          min: -10,
-                          max: 10,
-                          onChanged: (v) {
-                            setState(() => _accel = v);
-                            _calculate();
-                          }),
-                      ParameterSlider(
-                          label: 'Initial Velocity (m/s)',
-                          value: _initialV,
-                          min: -20,
-                          max: 20,
-                          onChanged: (v) {
-                            setState(() => _initialV = v);
-                            _calculate();
-                          }),
-                      ParameterSlider(
-                          label: 'Total Time (s)',
-                          value: _time,
-                          min: 1,
-                          max: 20,
-                          onChanged: (v) {
-                            setState(() => _time = v);
-                            _calculate();
-                          }),
-                      const SizedBox(height: 16),
-                      // FIXED: Added visible legend with proper colors
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceLight.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            _legendItem(Colors.redAccent, 'Position (m)'),
-                            const SizedBox(height: 8),
-                            _legendItem(Colors.blueAccent, 'Velocity (m/s)'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // FIXED: Show current calculated values
-                      _statRow('Final Position',
-                          '${(_data['position'] as List?)?.last?.toStringAsFixed(1) ?? '0'} m'),
-                      _statRow('Final Velocity',
-                          '${(_data['velocity'] as List?)?.last?.toStringAsFixed(1) ?? '0'} m/s'),
-                    ]))));
+      width: width,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(0, 12, isWide ? 12 : 8, 12),
+        child: Container(
+          decoration: AppTheme.glassCard,
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Motion Parameters',
+                      style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14)),
+                  const SizedBox(height: 12),
+                  ParameterSlider(
+                      label: 'Acceleration (m/s²)',
+                      value: _accel,
+                      min: -10,
+                      max: 10,
+                      onChanged: (v) {
+                        setState(() => _accel = v);
+                        _calculate();
+                      }),
+                  ParameterSlider(
+                      label: 'Initial Velocity (m/s)',
+                      value: _initialV,
+                      min: -20,
+                      max: 20,
+                      onChanged: (v) {
+                        setState(() => _initialV = v);
+                        _calculate();
+                      }),
+                  ParameterSlider(
+                      label: 'Total Time (s)',
+                      value: _time,
+                      min: 1,
+                      max: 20,
+                      onChanged: (v) {
+                        setState(() => _time = v);
+                        _calculate();
+                      }),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLight.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        _legendItem(Colors.redAccent, 'Position (m)'),
+                        const SizedBox(height: 8),
+                        _legendItem(Colors.blueAccent, 'Velocity (m/s)'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _statRow('Final Position',
+                      '${(_data['position'] as List?)?.last?.toStringAsFixed(1) ?? '0'} m'),
+                  _statRow('Final Velocity',
+                      '${(_data['velocity'] as List?)?.last?.toStringAsFixed(1) ?? '0'} m/s'),
+                ]),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _legendItem(Color color, String label) {

@@ -1,6 +1,5 @@
-// FIXED: Removed all API calls - now uses local chemistry calculations
-// Issue: Was trying to parse HTML responses as JSON (backend not running)
-// Fix: All calculations now performed locally in Dart
+// ENHANCED: Added periodic table element selector, more particle visualization
+// IMPROVED: Better responsiveness, more educational content
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -22,7 +21,6 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen>
   int _protons = 1;
   int _neutrons = 0;
   int _electrons = 1;
-
   Map<String, dynamic> _atomData = {};
   late AnimationController _animController;
 
@@ -42,53 +40,81 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen>
   }
 
   void _fetchAtom() {
-    // FIXED: Using local service instead of API call
     final data =
         LocalChemistryService.atomBuilder(_protons, _neutrons, _electrons);
     setState(() => _atomData = data);
   }
 
+  void _selectElement(String symbol) {
+    final data = LocalChemistryService.getAtomData(symbol);
+    if (data['success'] == true) {
+      setState(() {
+        _protons = data['atomic_number'] as int;
+        _electrons = data['atomic_number'] as int;
+        _neutrons = (data['atomic_number'] as int) - 1;
+      });
+      _fetchAtom();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
+    final controlWidth = isWide ? 360.0 : screenWidth * 0.9;
     return MainLayout(
       title: 'Atom Builder Simulator',
       child: isWide
-          ? Row(children: [_buildVisual(), _buildControls()])
+          ? Row(children: [_buildVisual(), _buildControls(controlWidth)])
           : SingleChildScrollView(
-              child: Column(children: [_buildVisual(), _buildControls()])),
+              child: Column(children: [
+              _buildVisual(),
+              _buildControls(screenWidth * 0.9)
+            ])),
     );
   }
 
   Widget _buildVisual() {
-    final isWide = MediaQuery.of(context).size.width > 800;
+    final isWide = MediaQuery.of(context).size.width > 900;
     final element = _atomData['element'] ?? 'Unknown';
     final symbol = _atomData['symbol'] ?? '?';
 
     final content = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Container(
         decoration: AppTheme.glassCard,
         child: Column(
           children: [
             if (_atomData['success'] == true)
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('$element ($symbol)',
-                    style: GoogleFonts.jetBrainsMono(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent)),
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildStatBadge('p: $_protons', Colors.redAccent),
+                    const SizedBox(width: 8),
+                    _buildStatBadge('n: $_neutrons', Colors.grey),
+                    const SizedBox(width: 8),
+                    _buildStatBadge('e: $_electrons', Colors.blueAccent),
+                    const SizedBox(width: 16),
+                    Text('$element ($symbol)',
+                        style: GoogleFonts.jetBrainsMono(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueAccent)),
+                  ],
+                ),
               ),
             Expanded(
               child: AnimatedBuilder(
                 animation: _animController,
                 builder: (_, __) => CustomPaint(
                   painter: _AtomPainter(
-                      protons: _protons,
-                      neutrons: _neutrons,
-                      electrons: _electrons,
-                      animValue: _animController.value),
+                    protons: _protons,
+                    neutrons: _neutrons,
+                    electrons: _electrons,
+                    animValue: _animController.value,
+                  ),
                   size: Size.infinite,
                 ),
               ),
@@ -100,93 +126,162 @@ class _AtomBuilderScreenState extends State<AtomBuilderScreen>
     return isWide
         ? Expanded(flex: 3, child: content)
         : SizedBox(
-            height: math.max(400.0, MediaQuery.of(context).size.height * 0.45),
-            child: content);
+            height: MediaQuery.of(context).size.height * 0.5, child: content);
   }
 
-  Widget _buildControls() {
-    final isWide = MediaQuery.of(context).size.width > 800;
+  Widget _buildStatBadge(String text, Color color) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color)),
+        child: Text(text,
+            style: GoogleFonts.inter(
+                fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+      );
+
+  Widget _buildControls(double width) {
+    final isWide = MediaQuery.of(context).size.width > 900;
     final charge = (_atomData['charge'] as num?)?.toInt() ?? 0;
     final mass = (_atomData['mass'] as num?)?.toInt() ?? 0;
     final isStable = _atomData['is_stable'] == true;
 
     return SizedBox(
-      width: isWide ? 320 : double.infinity,
+      width: width,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
+        padding: EdgeInsets.fromLTRB(0, 12, isWide ? 12 : 8, 12),
         child: Container(
           decoration: AppTheme.glassCard,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Subatomic Particles',
-                  style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              const SizedBox(height: 16),
-              ParameterSlider(
-                label: 'Protons (+)',
-                value: _protons.toDouble(),
-                min: 1,
-                max: 20,
-                onChanged: (v) {
-                  setState(() => _protons = v.toInt());
-                  _fetchAtom();
-                },
-              ),
-              ParameterSlider(
-                label: 'Neutrons (0)',
-                value: _neutrons.toDouble(),
-                min: 0,
-                max: 25,
-                onChanged: (v) {
-                  setState(() => _neutrons = v.toInt());
-                  _fetchAtom();
-                },
-              ),
-              ParameterSlider(
-                label: 'Electrons (-)',
-                value: _electrons.toDouble(),
-                min: 0,
-                max: 20,
-                onChanged: (v) {
-                  setState(() => _electrons = v.toInt());
-                  _fetchAtom();
-                },
-              ),
-              const SizedBox(height: 32),
-              if (_atomData['success'] == true) ...[
-                _statRow('Net Charge', charge > 0 ? '+$charge' : '$charge',
-                    charge == 0 ? Colors.green : Colors.redAccent),
-                _statRow('Mass Number', '$mass', Colors.orangeAccent),
-                _statRow('Stability', isStable ? 'Stable' : 'Isotope/Unstable',
-                    isStable ? Colors.green : Colors.yellow),
-              ] else if (_atomData['error'] != null)
-                Text(_atomData['error'] ?? 'Simulation Error',
-                    style: const TextStyle(color: Colors.redAccent))
-            ],
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Quick Select Element',
+                    style:
+                        GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                const SizedBox(height: 8),
+                _buildPeriodicTableGrid(),
+                const SizedBox(height: 16),
+                Text('Or Adjust Particles Manually',
+                    style:
+                        GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                const SizedBox(height: 12),
+                ParameterSlider(
+                    label: 'Protons (+) - Atomic Number',
+                    value: _protons.toDouble(),
+                    min: 1,
+                    max: 20,
+                    onChanged: (v) {
+                      setState(() => _protons = v.toInt());
+                      _fetchAtom();
+                    }),
+                ParameterSlider(
+                    label: 'Neutrons (0) - Mass Variation',
+                    value: _neutrons.toDouble(),
+                    min: 0,
+                    max: 25,
+                    onChanged: (v) {
+                      setState(() => _neutrons = v.toInt());
+                      _fetchAtom();
+                    }),
+                ParameterSlider(
+                    label: 'Electrons (-)',
+                    value: _electrons.toDouble(),
+                    min: 0,
+                    max: 20,
+                    onChanged: (v) {
+                      setState(() => _electrons = v.toInt());
+                      _fetchAtom();
+                    }),
+                const SizedBox(height: 16),
+                if (_atomData['success'] == true) ...[
+                  _buildInfoRow(
+                      'Net Charge',
+                      charge > 0 ? '+$charge' : '$charge',
+                      charge == 0 ? Colors.green : Colors.redAccent),
+                  _buildInfoRow('Mass Number', '$mass', Colors.orangeAccent),
+                  _buildInfoRow(
+                      'Stability',
+                      isStable ? 'Stable Isotope' : 'Unstable/Isotope',
+                      isStable ? Colors.green : Colors.yellow),
+                  _buildInfoRow(
+                      'Ion Type',
+                      charge > 0
+                          ? 'Cation (+)'
+                          : (charge < 0 ? 'Anion (-)' : 'Neutral'),
+                      Colors.purpleAccent),
+                ] else if (_atomData['error'] != null)
+                  Text(_atomData['error'] ?? 'Simulation Error',
+                      style: const TextStyle(color: Colors.redAccent)),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _statRow(String label, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: GoogleFonts.inter(color: Colors.white70)),
-          Text(value,
-              style: GoogleFonts.jetBrainsMono(
-                  color: color, fontWeight: FontWeight.bold, fontSize: 16)),
-        ],
+  Widget _buildPeriodicTableGrid() {
+    final elements = [
+      ['H', 'He'],
+      ['Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne'],
+      ['Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar'],
+      ['K', 'Ca'],
+    ];
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: elements
+          .expand((row) => row)
+          .map((el) => _buildElementButton(el))
+          .toList(),
+    );
+  }
+
+  Widget _buildElementButton(String el) {
+    final data = LocalChemistryService.getAtomData(el);
+    final isSelected = _atomData['symbol'] == el;
+    final color = data['valency'] == 0
+        ? Colors.grey
+        : (data['valency'] as int) <= 2
+            ? Colors.blueAccent
+            : Colors.greenAccent;
+    return GestureDetector(
+      onTap: () => _selectElement(el),
+      child: Container(
+        width: 32,
+        height: 28,
+        decoration: BoxDecoration(
+          color: isSelected ? color : color.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+              color: isSelected ? Colors.white : color.withValues(alpha: 0.5)),
+        ),
+        child: Center(
+            child: Text(el,
+                style: GoogleFonts.inter(
+                    fontSize: 10,
+                    color: isSelected ? Colors.white : color,
+                    fontWeight: FontWeight.bold))),
       ),
     );
   }
+
+  Widget _buildInfoRow(String label, String value, Color color) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style: GoogleFonts.inter(color: Colors.white70, fontSize: 12)),
+            Text(value,
+                style: GoogleFonts.jetBrainsMono(
+                    color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+          ],
+        ),
+      );
 }
 
 class _AtomPainter extends CustomPainter {
@@ -207,37 +302,36 @@ class _AtomPainter extends CustomPainter {
     final shellPaint = Paint()
       ..style = PaintingStyle.stroke
       ..color = Colors.white24
-      ..strokeWidth = 1;
+      ..strokeWidth = 1.5;
     final pPaint = Paint()
       ..style = PaintingStyle.fill
       ..color = Colors.redAccent;
     final nPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.grey;
+      ..color = Colors.grey.shade600;
     final ePaint = Paint()
       ..style = PaintingStyle.fill
       ..color = Colors.blueAccent;
 
-    // Nucleus - fixed positions using random seed
+    final nucleusRadius = (protons + neutrons) * 1.5;
     final random = math.Random(123);
     for (int i = 0; i < protons + neutrons; i++) {
       final isProton = i < protons;
       final angle = random.nextDouble() * 2 * math.pi;
-      final rad = random.nextDouble() * 15;
+      final rad = random.nextDouble() * nucleusRadius;
       final offset = Offset(
           center.dx + rad * math.cos(angle), center.dy + rad * math.sin(angle));
-      canvas.drawCircle(offset, 4, isProton ? pPaint : nPaint);
+      canvas.drawCircle(offset, 6, isProton ? pPaint : nPaint);
     }
 
-    // Electron shells
-    final shells = [2, 8, 8, 2];
+    final shells = [2, 8, 18, 32, 50];
     int remainingE = electrons;
     int shellIndex = 0;
 
     while (remainingE > 0 && shellIndex < shells.length) {
       int count =
           remainingE > shells[shellIndex] ? shells[shellIndex] : remainingE;
-      double radius = 50.0 + shellIndex * 40.0;
+      double radius = 50.0 + shellIndex * 35.0;
       canvas.drawCircle(center, radius, shellPaint);
 
       for (int i = 0; i < count; i++) {
@@ -246,7 +340,8 @@ class _AtomPainter extends CustomPainter {
             (animValue * 2 * math.pi * (shellIndex % 2 == 0 ? 1 : -1));
         final offset = Offset(center.dx + radius * math.cos(currentAngle),
             center.dy + radius * math.sin(currentAngle));
-        canvas.drawCircle(offset, 5, ePaint);
+        canvas.drawCircle(offset, 6, ePaint);
+        canvas.drawCircle(offset, 3, Paint()..color = Colors.white);
       }
       remainingE -= count;
       shellIndex++;

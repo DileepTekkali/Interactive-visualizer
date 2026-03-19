@@ -66,7 +66,7 @@ class MathScreen extends StatelessWidget {
                 ]),
                 const SizedBox(height: 32),
 
-                // Secondary Topics
+                // Intermediate Topics
                 _buildSection('Intermediate', 'Class 9-10',
                     Icons.menu_book_rounded, Colors.blueAccent),
                 const SizedBox(height: 16),
@@ -100,49 +100,6 @@ class MathScreen extends StatelessWidget {
                       Colors.orangeAccent, AppRoutes.calculus),
                   SubtopicData('Vectors', Icons.north_east_rounded,
                       Colors.redAccent, AppRoutes.vectors),
-                  SubtopicData('Conic Sections', Icons.architecture_rounded,
-                      Colors.deepOrangeAccent, '/conic_sections'),
-                  SubtopicData('Complex Numbers', Icons.superscript_rounded,
-                      Colors.deepPurpleAccent, '/complex_numbers'),
-                  SubtopicData('Linear Programming', Icons.area_chart_rounded,
-                      Colors.lightBlueAccent, '/linear_programming'),
-                ]),
-                const SizedBox(height: 32),
-
-                // Secondary Topics
-                _buildSection('Intermediate', 'Class 9-10',
-                    Icons.menu_book_rounded, Colors.blueAccent),
-                const SizedBox(height: 16),
-                _buildSubtopicGrid(context, [
-                  SubtopicData('Linear Graphs', Icons.show_chart_rounded,
-                      AppTheme.accent, '/linear'),
-                  SubtopicData('Quadratic Graphs', Icons.paragliding_rounded,
-                      AppTheme.secondary, '/quadratic'),
-                  SubtopicData('Trigonometry', Icons.waves_rounded,
-                      Colors.pinkAccent, '/trigonometry'),
-                  SubtopicData('Coordinate Geo', Icons.grid_4x4_rounded,
-                      Colors.blueAccent, '/coordinate_geometry'),
-                  SubtopicData('Circles', Icons.circle_outlined,
-                      Colors.lightGreenAccent, '/circles'),
-                  SubtopicData('Statistics', Icons.insert_chart_rounded,
-                      Colors.purpleAccent, '/statistics'),
-                  SubtopicData(
-                      'Progressions',
-                      Icons.format_list_numbered_rounded,
-                      Colors.indigoAccent,
-                      '/progressions'),
-                ]),
-                const SizedBox(height: 32),
-
-                // Advanced Topics
-                _buildSection('Advanced', 'Class 11-12', Icons.science_outlined,
-                    Colors.deepOrangeAccent),
-                const SizedBox(height: 16),
-                _buildSubtopicGrid(context, [
-                  SubtopicData('Calculus', Icons.auto_graph_rounded,
-                      Colors.orangeAccent, '/calculus'),
-                  SubtopicData('Vectors', Icons.north_east_rounded,
-                      Colors.redAccent, '/vectors'),
                   SubtopicData('Conic Sections', Icons.architecture_rounded,
                       Colors.deepOrangeAccent, '/conic_sections'),
                   SubtopicData('Complex Numbers', Icons.superscript_rounded,
