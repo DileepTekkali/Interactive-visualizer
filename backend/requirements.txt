@@ -1,9 +1,7 @@
 # Math & Science Viz API — Python dependencies
 # ALL offline — no external API calls, no matplotlib, no image generation.
 
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
-numpy==1.26.4
-python-multipart==0.0.6
-pydantic==2.5.0
-# sympy REMOVED — equation strings now built with pure Python
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
