@@ -152,11 +152,11 @@ class AppSidebar extends StatelessWidget {
                   'Mechanics',
                   Icons.speed,
                   [
-                    _SubItem("Newton's Laws", '/newtons_laws',
+                    _SubItem("Newton's Laws", '/physics/newtons_laws',
                         'F = ma calculations'),
-                    _SubItem('Friction Simulator', '/friction',
+                    _SubItem('Friction Simulator', '/physics/friction',
                         'Inclined plane forces'),
-                    _SubItem('Lever Machine', '/lever_machine',
+                    _SubItem('Lever Machine', '/physics/lever',
                         'Mechanical advantage'),
                   ],
                 ),
@@ -165,12 +165,12 @@ class AppSidebar extends StatelessWidget {
                   'Energy & Motion',
                   Icons.bolt,
                   [
-                    _SubItem('Motion Graphs', '/motion_graph',
+                    _SubItem('Motion Graphs', '/physics/motion',
                         'Position and velocity'),
-                    _SubItem('Energy Simulator', '/energy_simulator',
+                    _SubItem('Energy Simulator', '/physics/energy',
                         'Kinetic and potential'),
                     _SubItem(
-                        'Wave Simulator', '/wave_simulator', 'Wave properties'),
+                        'Wave Simulator', '/physics/wave', 'Wave properties'),
                   ],
                 ),
                 _buildSubjectTile(
@@ -178,9 +178,9 @@ class AppSidebar extends StatelessWidget {
                   'Electricity & Magnetism',
                   Icons.electric_bolt,
                   [
-                    _SubItem('Circuit Simulator', '/circuit_simulator',
+                    _SubItem('Circuit Simulator', '/physics/circuit',
                         'Series and parallel circuits'),
-                    _SubItem('Magnetic Field', '/magnetic_field',
+                    _SubItem('Magnetic Field', '/physics/magnetic_field',
                         'Field lines and poles'),
                   ],
                 ),
@@ -189,7 +189,8 @@ class AppSidebar extends StatelessWidget {
                   'Optics & Waves',
                   Icons.visibility,
                   [
-                    _SubItem("Snell's Law", '/optics', 'Light refraction'),
+                    _SubItem(
+                        "Snell's Law", '/physics/optics', 'Light refraction'),
                   ],
                 ),
                 _buildSubjectTile(
@@ -197,7 +198,7 @@ class AppSidebar extends StatelessWidget {
                   'Thermal Physics',
                   Icons.thermostat,
                   [
-                    _SubItem('Heat Transfer', '/heat_transfer',
+                    _SubItem('Heat Transfer', '/physics/heat_transfer',
                         'Conduction, convection'),
                   ],
                 ),
@@ -211,9 +212,9 @@ class AppSidebar extends StatelessWidget {
                   'Atomic Structure',
                   Icons.blur_circular,
                   [
-                    _SubItem('Atom Builder', '/atom_builder',
+                    _SubItem('Atom Builder', '/chemistry/atom_builder',
                         'Protons, neutrons, electrons'),
-                    _SubItem('Periodic Table', '/periodic_table',
+                    _SubItem('Periodic Table', '/chemistry/periodic_table',
                         'Element explorer'),
                   ],
                 ),
@@ -222,7 +223,7 @@ class AppSidebar extends StatelessWidget {
                   'Chemical Bonding',
                   Icons.link,
                   [
-                    _SubItem('Bonding Simulator', '/bonding',
+                    _SubItem('Bonding Simulator', '/chemistry/bonding',
                         'Ionic, covalent, metallic'),
                   ],
                 ),
@@ -231,9 +232,9 @@ class AppSidebar extends StatelessWidget {
                   'Chemical Processes',
                   Icons.science,
                   [
-                    _SubItem('Separation Process', '/separation',
+                    _SubItem('Separation Process', '/chemistry/separation',
                         'Filtration, evaporation'),
-                    _SubItem('Mole Calculator', '/mole_calculator',
+                    _SubItem('Mole Calculator', '/chemistry/mole_calculator',
                         'Moles and mass'),
                   ],
                 ),
@@ -242,13 +243,13 @@ class AppSidebar extends StatelessWidget {
                   'Reaction Chemistry',
                   Icons.transform,
                   [
-                    _SubItem('Le Chatelier Principle', '/equilibrium',
+                    _SubItem('Le Chatelier Principle', '/chemistry/equilibrium',
                         'Equilibrium shifts'),
-                    _SubItem(
-                        'Reaction Kinetics', '/kinetics', 'Rate of reactions'),
-                    _SubItem(
-                        'Thermodynamics', '/thermodynamics', 'Energy changes'),
-                    _SubItem('Change Detector', '/change_detector',
+                    _SubItem('Reaction Kinetics', '/chemistry/kinetics',
+                        'Rate of reactions'),
+                    _SubItem('Thermodynamics', '/chemistry/thermodynamics',
+                        'Energy changes'),
+                    _SubItem('Change Detector', '/chemistry/change_detector',
                         'Physical vs chemical'),
                   ],
                 ),
